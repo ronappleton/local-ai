@@ -11,6 +11,6 @@ FROM ubuntu:22.04
 RUN apt-get update && apt-get install -y ca-certificates sqlite3 && rm -rf /var/lib/apt/lists/*
 WORKDIR /data
 COPY --from=build /usr/local/bin/codex /usr/local/bin/codex
-COPY --from=build /src/client /client
+COPY ./src/client /client
 EXPOSE 8081
 CMD ["codex", "serve"]

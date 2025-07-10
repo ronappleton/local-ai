@@ -9,7 +9,7 @@ package handlers
 // LLM client defined in the llama package.
 
 import (
-	"codex/llama"
+	"codex/src/llama"
 	"encoding/json"
 	_ "io"
 	"net/http"

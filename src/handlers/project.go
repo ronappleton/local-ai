@@ -4,11 +4,10 @@ package handlers
 // contexts.  Each project maps to a separate memory namespace in the database.
 
 import (
+	"codex/src/memory"
 	"encoding/json"
 	"net/http"
 	"strings"
-
-	"codex/memory"
 )
 
 // This file implements HTTP handlers for managing assistant projects. Projects

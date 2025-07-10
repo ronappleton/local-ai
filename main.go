@@ -7,7 +7,7 @@ package main
 // acts as the *process entry point* when running the binary.
 
 import (
-	"codex/cmd"
+	"codex/src/cmd"
 	"log"
 )
 

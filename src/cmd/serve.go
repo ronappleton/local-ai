@@ -10,10 +10,10 @@ package cmd
 // for chat and project management.
 
 import (
+	handlers2 "codex/src/handlers"
 	"log"
 	"net/http"
 
-	"codex/handlers"
 	"github.com/spf13/cobra"
 )
 
@@ -26,19 +26,22 @@ var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Start the Codex web server",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Register REST endpoints. Additional routes can be added here
-		// to extend the API surface.
-		http.HandleFunc("/chat", handlers.ChatHandler)
-		http.HandleFunc("/projects", handlers.ProjectsHandler)
-		http.HandleFunc("/projects/switch", handlers.SwitchProjectHandler)
-		http.HandleFunc("/projects/rename", handlers.RenameProjectHandler)
-		http.HandleFunc("/projects/", handlers.DeleteProjectHandler)
-		// serve the Vue.js client
-		fs := http.FileServer(http.Dir("/client"))
-		http.Handle("/", fs)
+		http.HandleFunc("/chat", handlers2.ChatHandler)
+		http.HandleFunc("/projects", handlers2.ProjectsHandler)
+		http.HandleFunc("/projects/switch", handlers2.SwitchProjectHandler)
+		http.HandleFunc("/projects/rename", handlers2.RenameProjectHandler)
+		http.HandleFunc("/projects/", handlers2.DeleteProjectHandler)
+
+		// Serve index.html at "/" only
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/" {
+				http.ServeFile(w, r, "/client/index.html")
+				return
+			}
+			http.NotFound(w, r)
+		})
+
 		log.Println("Codex API running on http://localhost:8081")
-		// Start the HTTP server. Fatal ensures the program exits if the
-		// server fails to start.
 		log.Fatal(http.ListenAndServe(":8081", nil))
 	},
 }

@@ -5,10 +5,9 @@ package cmd
 // common error scenarios.
 
 import (
+	"codex/src/memory"
 	"os"
 	"testing"
-
-	"codex/memory"
 )
 
 // TestAddCommand verifies that the `add` CLI subcommand writes a memory entry

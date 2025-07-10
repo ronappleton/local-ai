@@ -7,7 +7,7 @@ package cmd
 // metadata).
 
 import (
-	"codex/memory"
+	"codex/src/memory"
 	"fmt"
 	"github.com/spf13/cobra"
 )
