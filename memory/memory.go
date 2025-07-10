@@ -23,7 +23,7 @@ func InitDB() (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	createTable := `CREATE TABLE IF NOT EXISTS memory (
+	createMemory := `CREATE TABLE IF NOT EXISTS memory (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         project TEXT,
         role TEXT,
@@ -31,7 +31,15 @@ func InitDB() (*sql.DB, error) {
         timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
         importance INTEGER DEFAULT 0
     );`
-	if _, err := db.Exec(createTable); err != nil {
+	if _, err := db.Exec(createMemory); err != nil {
+		db.Close()
+		return nil, err
+	}
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS projects (name TEXT PRIMARY KEY);`); err != nil {
+		db.Close()
+		return nil, err
+	}
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT);`); err != nil {
 		db.Close()
 		return nil, err
 	}
@@ -106,3 +114,84 @@ func TopImportantEntries(db *sql.DB, project string, n int) ([]MemoryEntry, erro
 	}
 	return entries, nil
 }
+
+// AddProject inserts a project name if it doesn't already exist.
+func AddProject(db *sql.DB, name string) error {
+	_, err := db.Exec(`INSERT OR IGNORE INTO projects(name) VALUES(?)`, name)
+	return err
+}
+
+// DeleteProject removes a project from the table and associated settings.
+func DeleteProject(db *sql.DB, name string) error {
+	if _, err := db.Exec(`DELETE FROM projects WHERE name = ?`, name); err != nil {
+		return err
+	}
+	// clear active project if it was deleted
+	active, err := GetActiveProject(db)
+	if err != nil {
+		return err
+	}
+	if active == name {
+		_, err = db.Exec(`DELETE FROM settings WHERE key = 'active_project'`)
+	}
+	return err
+}
+
+// ListProjects returns all project names sorted alphabetically.
+func ListProjects(db *sql.DB) ([]string, error) {
+	rows, err := db.Query(`SELECT name FROM projects ORDER BY name`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var res []string
+	for rows.Next() {
+		var n string
+		if err := rows.Scan(&n); err != nil {
+			return nil, err
+		}
+		res = append(res, n)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+// SetActiveProject marks the given project as the active one.
+func SetActiveProject(db *sql.DB, name string) error {
+	_, err := db.Exec(`INSERT OR REPLACE INTO settings(key, value) VALUES('active_project', ?)`, name)
+	return err
+}
+
+// GetActiveProject retrieves the current active project name.
+func GetActiveProject(db *sql.DB) (string, error) {
+	row := db.QueryRow(`SELECT value FROM settings WHERE key = 'active_project'`)
+	var name string
+	err := row.Scan(&name)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return name, err
+}
+
+// AddMemory opens the default DB and stores a memory entry.
+func AddMemory(project, role, content string) error {
+	db, err := InitDB()
+	if err != nil {
+		return err
+	}
+	defer db.Close()
+	return AddEntry(db, project, role, content)
+}
+
+//// AddMemory is a helper that opens the database, adds the entry, and closes the
+//// connection. It is convenient for simple use cases like the CLI command.
+//func AddMemory(project, role, content string, importance ...int) error {
+//	db, err := InitDB()
+//	if err != nil {
+//		return err
+//	}
+//	defer db.Close()
+//	return AddEntry(db, project, role, content, importance...)
+//}

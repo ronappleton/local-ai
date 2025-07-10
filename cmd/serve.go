@@ -13,6 +13,9 @@ var serveCmd = &cobra.Command{
 	Short: "Start the Codex web server",
 	Run: func(cmd *cobra.Command, args []string) {
 		http.HandleFunc("/chat", handlers.ChatHandler)
+		http.HandleFunc("/projects", handlers.ProjectsHandler)
+		http.HandleFunc("/projects/switch", handlers.SwitchProjectHandler)
+		http.HandleFunc("/projects/", handlers.DeleteProjectHandler)
 		log.Println("Codex API running on http://localhost:8081")
 		log.Fatal(http.ListenAndServe(":8081", nil))
 	},
