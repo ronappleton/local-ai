@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"local-ai/memory"
+	"codex/memory"
 )
 
 // TestAddCommand verifies that the `add` CLI subcommand writes a memory entry

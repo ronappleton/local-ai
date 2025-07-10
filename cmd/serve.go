@@ -8,8 +8,8 @@ import (
 	"log"
 	"net/http"
 
+	"codex/handlers"
 	"github.com/spf13/cobra"
-	"local-ai/handlers"
 )
 
 // serveCmd wires up an HTTP router and listens on port 8081. The routes are

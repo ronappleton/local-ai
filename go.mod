@@ -1,4 +1,4 @@
-module local-ai
+module codex
 
 go 1.24
 

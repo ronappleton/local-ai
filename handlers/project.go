@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"local-ai/memory"
+	"codex/memory"
 )
 
 // This file implements HTTP handlers for managing assistant projects. Projects

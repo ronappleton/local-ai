@@ -8,7 +8,7 @@ services:
       - "8080:8080"
     command: ["--model", "/models/your-model.gguf"]
 
-  local-ai:
+  codex:
     build: .
     depends_on:
       - llama

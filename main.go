@@ -5,7 +5,7 @@ package main
 // entry point when the built binary is executed.
 
 import (
-	"local-ai/cmd"
+	"codex/cmd"
 	"log"
 )
 

@@ -5,9 +5,9 @@ package cmd
 // or assistant messages from the terminal.
 
 import (
+	"codex/memory"
 	"fmt"
 	"github.com/spf13/cobra"
-	"local-ai/memory"
 )
 
 // importance holds an optional score that can be provided via the command
