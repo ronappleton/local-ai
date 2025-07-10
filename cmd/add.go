@@ -2,7 +2,9 @@ package cmd
 
 // This file defines the `add` CLI command used to store a conversation snippet
 // into the persistent memory database. It acts as a simple way to record user
-// or assistant messages from the terminal.
+// or assistant messages from the terminal.  The command is intentionally small
+// so it can be extended with additional flags in the future (e.g. tags or
+// metadata).
 
 import (
 	"codex/memory"

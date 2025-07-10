@@ -1,5 +1,8 @@
 package llama
 
+// Unit tests for the LLM client wrapper. They spin up a temporary HTTP server
+// that mimics the real model endpoint.
+
 import (
 	"encoding/json"
 	"net"

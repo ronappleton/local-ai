@@ -1,5 +1,9 @@
 package cmd
 
+// Package cmd hosts all cobra CLI subcommands for the Codex assistant.
+// New functionality is typically added here by defining a new
+// `cobra.Command` and attaching it to `rootCmd` within an `init` function.
+
 // The cmd package defines all CLI commands for interacting with Codex. Each
 // command is built using cobra and attached to the rootCmd defined below.
 

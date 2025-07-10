@@ -1,8 +1,10 @@
 package main
 
-// Main package provides the command line entry for the Codex assistant. All
-// CLI subcommands are registered in the cmd package. This file is the program
-// entry point when the built binary is executed.
+// Main package provides the command line entry for the Codex assistant.
+// The executable compiled from this package simply invokes the root
+// command defined in the cmd package.  All subcommands and CLI
+// behaviour are registered under that package.  This file therefore
+// acts as the *process entry point* when running the binary.
 
 import (
 	"codex/cmd"

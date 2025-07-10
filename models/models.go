@@ -1,5 +1,10 @@
 package models
 
+// This package contains utilities for downloading and tracking Hugging Face
+// models.  The CLI commands in cmd/models.go rely on these helpers to persist
+// the user's chosen model set.  The AI uses this information when selecting the
+// correct files for inference.
+//
 // AI: Feature - Hugging Face model management
 // AI: Extension - Handles selection of model type and storage
 
@@ -13,6 +18,8 @@ import (
 	"time"
 )
 
+// ModelInfo represents summary data returned by the Hugging Face API when
+// listing available models.
 type ModelInfo struct {
 	ID           string   `json:"modelId"`
 	LastModified string   `json:"lastModified"`
@@ -20,6 +27,9 @@ type ModelInfo struct {
 	Tags         []string `json:"tags"`
 }
 
+// LocalModel tracks information about a model that has been downloaded to the
+// user's machine.  The `Active` flag indicates which model is currently in
+// use by the assistant.
 type LocalModel struct {
 	ID         string    `json:"id"`
 	Type       string    `json:"type"`
@@ -29,13 +39,19 @@ type LocalModel struct {
 	Active     bool      `json:"active"`
 }
 
+// State is the persisted representation of all downloaded models and which one
+// is active.  It is stored as JSON under models/state.json.
 type State struct {
 	Active string                 `json:"active_model"`
 	Models map[string]*LocalModel `json:"models"`
 }
 
+// statePath defines where the assistant keeps metadata about downloaded models
+// and the currently active selection.
 var statePath = filepath.Join("models", "state.json")
 
+// LoadState reads the state file from disk and returns the parsed structure.
+// If the file does not exist a new empty state is returned.
 func LoadState() (*State, error) {
 	f, err := os.Open(statePath)
 	if err != nil {
@@ -55,6 +71,8 @@ func LoadState() (*State, error) {
 	return &s, nil
 }
 
+// SaveState writes the given model state to disk creating the directory if
+// necessary.
 func SaveState(s *State) error {
 	if err := os.MkdirAll(filepath.Dir(statePath), 0755); err != nil {
 		return err
@@ -69,6 +87,8 @@ func SaveState(s *State) error {
 	return enc.Encode(s)
 }
 
+// ListModelsByType queries the Hugging Face API for models of the given
+// pipeline category and returns a simplified slice of model metadata.
 func ListModelsByType(pipeline string) ([]ModelInfo, error) {
 	url := "https://huggingface.co/api/models?pipeline_tag=" + pipeline
 	resp, err := http.Get(url)
@@ -96,6 +116,9 @@ func ListModelsByType(pipeline string) ([]ModelInfo, error) {
 	return res, nil
 }
 
+// DownloadModel fetches all files for the given model ID and stores them under
+// the models directory.  It returns the model's SHA hash reported by the API so
+// callers can track versions.
 func DownloadModel(id string) (string, error) {
 	infoURL := "https://huggingface.co/api/models/" + id
 	resp, err := http.Get(infoURL)
@@ -129,6 +152,8 @@ func DownloadModel(id string) (string, error) {
 	return data.Sha, nil
 }
 
+// downloadFile retrieves a single file via HTTP and saves it to the provided
+// path.  It is a helper used by DownloadModel.
 func downloadFile(path, url string) error {
 	resp, err := http.Get(url)
 	if err != nil {

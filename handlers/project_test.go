@@ -1,5 +1,8 @@
 package handlers
 
+// Tests covering the project management HTTP API. They validate that the
+// handler layer properly persists data using the memory package.
+
 import (
 	"bytes"
 	"encoding/json"

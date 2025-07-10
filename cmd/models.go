@@ -1,5 +1,10 @@
 package cmd
 
+// This file implements the `models` group of subcommands which allow the
+// assistant to list, download and select Hugging Face models.  It interacts
+// with the models package which performs the actual HTTP requests and state
+// management.
+
 import (
 	"bufio"
 	"fmt"
@@ -13,13 +18,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// pipelineTypes lists the available model categories that the user can browse
+// when interacting with Hugging Face.  The selection is presented by the `list`
+// subcommand.
 var pipelineTypes = []string{"text-generation", "text2text-generation", "text-classification", "code", "conversational"}
 
+// modelsCmd is the top-level command under which all model related operations
+// reside.  Calling `codex models` without subcommands will simply print the
+// command help.
 var modelsCmd = &cobra.Command{
 	Use:   "models",
 	Short: "Manage Hugging Face models",
 }
 
+// listCmd prompts the user to choose a model pipeline and prints a table of
+// available models.  The star marker denotes models that have already been
+// downloaded locally.
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List models for a pipeline type",
@@ -60,6 +74,9 @@ var listCmd = &cobra.Command{
 	},
 }
 
+// downloadCmd retrieves one or more model files from Hugging Face and updates
+// the local state file.  The --all flag downloads every model from the most
+// recently selected pipeline.
 var downloadAll bool
 var downloadCmd = &cobra.Command{
 	Use:   "download [model-id]",
@@ -109,6 +126,8 @@ var downloadCmd = &cobra.Command{
 var selectedPipeline string
 var forceDownload bool
 
+// useCmd marks a previously downloaded model as the active one.  Only one
+// model may be active at a time and this state is persisted on disk.
 var useCmd = &cobra.Command{
 	Use:   "use [model-id]",
 	Short: "Set active model",
@@ -132,6 +151,8 @@ var useCmd = &cobra.Command{
 	},
 }
 
+// statusCmd prints details about whichever model is currently active.  It is
+// useful for debugging which files the assistant will use for generation.
 var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Show active model info",

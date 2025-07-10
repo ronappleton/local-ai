@@ -1,5 +1,8 @@
 package handlers
 
+// Tests for the HTTP chat endpoint. The handler communicates with a mocked LLM
+// server so that responses are deterministic.
+
 import (
 	"bytes"
 	"encoding/json"

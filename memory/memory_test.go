@@ -1,5 +1,8 @@
 package memory
 
+// Tests for the persistence layer. They validate the SQLite helpers used to
+// store conversation memories and project metadata.
+
 import (
 	"os"
 	"testing"

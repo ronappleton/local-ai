@@ -1,5 +1,9 @@
 package handlers
 
+// Package handlers exposes HTTP endpoints that allow external clients to
+// interact with the assistant.  It depends on the llama package to perform the
+// actual prompt/response generation.
+
 // The handlers package contains HTTP endpoints that expose the AI's
 // functionality. ChatHandler acts as the bridge between the HTTP API and the
 // LLM client defined in the llama package.

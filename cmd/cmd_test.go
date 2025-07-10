@@ -1,5 +1,9 @@
 package cmd
 
+// These tests exercise the CLI commands defined in this package.  They verify
+// that command handlers invoke the underlying packages correctly and handle
+// common error scenarios.
+
 import (
 	"os"
 	"testing"

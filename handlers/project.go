@@ -1,5 +1,8 @@
 package handlers
 
+// Project related HTTP handlers providing CRUD operations for conversation
+// contexts.  Each project maps to a separate memory namespace in the database.
+
 import (
 	"encoding/json"
 	"net/http"

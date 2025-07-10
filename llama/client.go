@@ -29,7 +29,10 @@ type completionResponse struct {
 }
 
 // SendPrompt sends the provided prompt to the local LLM server and returns the
-// generated text. It is used by higher level handlers such as the HTTP API.
+// generated text.  Higher level components such as the HTTP handlers rely on
+// this function to interact with the language model.  The request format is
+// currently fixed but could be extended with additional parameters if new
+// model features become available.
 func SendPrompt(prompt string) (string, error) {
 	reqBody := completionRequest{
 		Prompt:      prompt,
@@ -40,7 +43,8 @@ func SendPrompt(prompt string) (string, error) {
 	body, _ := json.Marshal(reqBody)
 
 	// TODO: make the endpoint configurable so alternative LLM backends can
-	// be targeted in the future.
+	// be targeted in the future.  This is a natural extension point for
+	// supporting remote or cloud hosted models.
 	resp, err := http.Post("http://localhost:8080/completion", "application/json", bytes.NewReader(body))
 	if err != nil {
 		return "", err

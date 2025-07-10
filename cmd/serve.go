@@ -1,5 +1,10 @@
 package cmd
 
+// This file wires the `serve` subcommand into the CLI.  When executed it
+// launches a local HTTP server exposing endpoints defined in the handlers
+// package.  These endpoints provide chat and project management APIs used by the
+// web client and other tools.
+
 // The `serve` command exposes a lightweight HTTP API backed by the handlers
 // package. Running this command starts a local web server that exposes endpoints
 // for chat and project management.
