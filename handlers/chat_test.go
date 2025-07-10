@@ -9,6 +9,9 @@ import (
 	"testing"
 )
 
+// startMockLLM spins up a temporary HTTP server that mimics the behaviour of
+// the local LLM endpoint. It allows the ChatHandler tests to run without an
+// actual model. The returned function shuts the server down.
 func startMockLLM(t *testing.T) func() {
 	ln, err := net.Listen("tcp", "127.0.0.1:8080")
 	if err != nil {
@@ -26,6 +29,9 @@ func startMockLLM(t *testing.T) func() {
 	return srv.Close
 }
 
+// TestChatHandlerSuccess posts a prompt to ChatHandler and verifies that the
+// mocked LLM response is returned. This exercises the HTTP entry point used by
+// the web server.
 func TestChatHandlerSuccess(t *testing.T) {
 	closeSrv := startMockLLM(t)
 	if closeSrv != nil {
@@ -49,6 +55,8 @@ func TestChatHandlerSuccess(t *testing.T) {
 	}
 }
 
+// TestChatHandlerMethod confirms that ChatHandler rejects non-POST requests
+// with a method-not-allowed status.
 func TestChatHandlerMethod(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/chat", nil)
 	w := httptest.NewRecorder()

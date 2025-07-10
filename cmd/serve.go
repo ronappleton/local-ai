@@ -15,6 +15,8 @@ import (
 // serveCmd wires up an HTTP router and listens on port 8081. The routes are
 // implemented in the handlers package and allow the AI to be accessed through
 // REST style requests.
+// Extension Point: modify this command to serve additional endpoints or adjust
+// server configuration such as port and TLS settings.
 var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Start the Codex web server",

@@ -3,7 +3,10 @@ package llama
 // Package llama contains a minimal HTTP client used to communicate with the
 // local LLM server. The AI uses this package to send prompts and receive
 // completions.
-
+//
+// AI Awareness: Any change to this client affects how the assistant interacts
+// with its underlying language model. Additional parameters or authentication
+// mechanisms can be added here to support new model backends.
 import (
 	"bytes"
 	"encoding/json"

@@ -21,7 +21,8 @@ type ProjectsResponse struct {
 
 // ProjectsHandler handles listing and creating projects. It responds to both
 // GET and POST on the /projects endpoint and interacts with the memory package
-// for persistence.
+// for persistence. Extension Point: additional methods such as PUT could be
+// added here to extend project metadata management.
 func ProjectsHandler(w http.ResponseWriter, r *http.Request) {
 	db, err := memory.InitDB()
 	if err != nil {
@@ -61,7 +62,9 @@ func ProjectsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // SwitchProjectHandler sets the active project. Clients post a project name to
-// /projects/switch to change context for subsequent chat operations.
+// /projects/switch to change context for subsequent chat operations. AI
+// Awareness: by switching project, the assistant focuses memory queries on a
+// different conversation context.
 func SwitchProjectHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -89,7 +92,9 @@ func SwitchProjectHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteProjectHandler removes a project identified by /projects/{name}. It
-// will also unset the active project if that project is being deleted.
+// will also unset the active project if that project is being deleted. This is
+// primarily used by the CLI and HTTP API when the user wants to discard a
+// conversation history.
 func DeleteProjectHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -116,7 +121,9 @@ func DeleteProjectHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// RenameProjectHandler renames a project.
+// RenameProjectHandler renames a project. This updates all stored memories and
+// the active project setting so the assistant remains consistent across the
+// database.
 func RenameProjectHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)

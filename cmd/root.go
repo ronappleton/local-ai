@@ -10,6 +10,8 @@ import (
 // rootCmd is the primary cobra.Command that acts as the parent for all other
 // subcommands. Running the compiled binary invokes this command which in turn
 // delegates to specific actions such as `serve` or `add`.
+// Extension Point: additional CLI functionality can be introduced by creating
+// new cobra.Commands and calling rootCmd.AddCommand within an init function.
 var rootCmd = &cobra.Command{
 	Use:   "codex",
 	Short: "Codex AI Assistant CLI",

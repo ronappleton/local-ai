@@ -9,6 +9,9 @@ import (
 	"testing"
 )
 
+// setupTempDB creates a temporary working directory and initialises the SQLite
+// database there. Tests use this to ensure isolation. It returns a cleanup
+// function that restores the original working directory.
 func setupTempDB(t *testing.T) func() {
 	dir := t.TempDir()
 	cwd, _ := os.Getwd()
@@ -16,6 +19,9 @@ func setupTempDB(t *testing.T) func() {
 	return func() { os.Chdir(cwd) }
 }
 
+// TestProjectAPI exercises the full project management API: creating,
+// switching, listing, renaming and deleting projects. It validates the
+// integration between the HTTP handlers and the memory layer.
 func TestProjectAPI(t *testing.T) {
 	cleanup := setupTempDB(t)
 	defer cleanup()

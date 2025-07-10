@@ -23,7 +23,9 @@ type ChatResponse struct {
 
 // ChatHandler receives a chat prompt via HTTP POST and returns the assistant's
 // response. This endpoint is used by the `serve` command to expose chat
-// functionality over HTTP.
+// functionality over HTTP. AI Awareness: this is the bridge between external
+// clients and the underlying LLM. Additional preprocessing or postprocessing
+// logic can be inserted here.
 func ChatHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)

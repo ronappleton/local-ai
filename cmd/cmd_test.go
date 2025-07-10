@@ -7,6 +7,9 @@ import (
 	"local-ai/memory"
 )
 
+// TestAddCommand verifies that the `add` CLI subcommand writes a memory entry
+// with the provided importance score. It exercises the integration between the
+// cmd layer and the memory package.
 func TestAddCommand(t *testing.T) {
 	dir := t.TempDir()
 	cwd, _ := os.Getwd()
@@ -31,6 +34,8 @@ func TestAddCommand(t *testing.T) {
 	}
 }
 
+// TestExecuteInvalidCommand ensures that invoking an unknown command returns an
+// error from cobra. This guards the command parsing entry point.
 func TestExecuteInvalidCommand(t *testing.T) {
 	rootCmd.SetArgs([]string{"nonexist"})
 	if err := Execute(); err == nil {

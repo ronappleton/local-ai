@@ -6,6 +6,9 @@ import (
 	"time"
 )
 
+// TestAddAndRetrieveEntries ensures entries can be stored and queried in time
+// order and by importance. It validates the core persistence logic used by the
+// assistant for long term memory.
 func TestAddAndRetrieveEntries(t *testing.T) {
 	dir := t.TempDir()
 	cwd, err := os.Getwd()
@@ -55,6 +58,9 @@ func TestAddAndRetrieveEntries(t *testing.T) {
 	}
 }
 
+// TestAddMemory covers the higher-level AddMemory helper which opens the
+// database internally. AI Awareness: this path is used when the CLI records a
+// message without directly handling the database handle.
 func TestAddMemory(t *testing.T) {
 	dir := t.TempDir()
 	cwd, _ := os.Getwd()
@@ -80,6 +86,9 @@ func TestAddMemory(t *testing.T) {
 	}
 }
 
+// TestProjectManagement verifies creating, listing and deleting projects along
+// with storing which one is active. This mimics how the assistant maintains
+// separate conversation contexts.
 func TestProjectManagement(t *testing.T) {
 	dir := t.TempDir()
 	cwd, _ := os.Getwd()
@@ -118,6 +127,8 @@ func TestProjectManagement(t *testing.T) {
 	}
 }
 
+// TestRenameProject checks that renaming a project cascades to memories and the
+// active project setting. This protects data consistency across the database.
 func TestRenameProject(t *testing.T) {
 	dir := t.TempDir()
 	cwd, _ := os.Getwd()

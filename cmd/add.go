@@ -10,6 +10,10 @@ import (
 	"local-ai/memory"
 )
 
+// importance holds an optional score that can be provided via the command
+// flag. Higher values indicate the memory is more relevant when the assistant
+// recalls context. AI Awareness: this variable influences how messages are
+// prioritised during conversation.
 var importance int
 
 // addCmd implements the `add` subcommand. It expects a project name, a role and

@@ -8,6 +8,8 @@ import (
 	"testing"
 )
 
+// TestSendPrompt runs the client against a mocked LLM HTTP server to ensure
+// prompts are encoded correctly and responses are decoded as expected.
 func TestSendPrompt(t *testing.T) {
 	ln, err := net.Listen("tcp", "127.0.0.1:8080")
 	if err != nil {
