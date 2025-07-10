@@ -1,5 +1,10 @@
 package memory
 
+// Package memory provides persistence for conversations and project metadata.
+// It acts as the long term storage that the AI can query or append to when new
+// messages are generated. The implementation uses SQLite for a lightweight
+// local database.
+
 import (
 	"database/sql"
 	"time"
@@ -7,6 +12,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// MemoryEntry represents a single line of conversation stored in the database.
+// Importance is an optional ranking that can be used by the AI to prioritise
+// context when generating responses.
 type MemoryEntry struct {
 	ID         int
 	Project    string
@@ -16,8 +24,10 @@ type MemoryEntry struct {
 	Importance int
 }
 
-// InitDB opens the SQLite database stored in memory.db in the current working directory
-// and creates the memory table if it does not already exist.
+// InitDB opens the SQLite database stored in memory.db in the current working
+// directory and ensures all required tables exist. It returns a handle to the
+// database which callers must close. This function is used throughout the
+// project whenever persistent storage is required.
 func InitDB() (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", "memory.db")
 	if err != nil {
@@ -46,7 +56,9 @@ func InitDB() (*sql.DB, error) {
 	return db, nil
 }
 
-// AddEntry inserts a new memory record into the database.
+// AddEntry inserts a new memory record into the provided database connection.
+// Importance is optional and defaults to zero. Higher importance can be used by
+// the AI to prioritise which memories to surface during context gathering.
 func AddEntry(db *sql.DB, project, role, content string, importance ...int) error {
 	imp := 0
 	if len(importance) > 0 {
@@ -61,7 +73,9 @@ func AddEntry(db *sql.DB, project, role, content string, importance ...int) erro
 	return err
 }
 
-// LastNEntries retrieves the last n memory records for a project ordered by timestamp descending.
+// LastNEntries retrieves the most recent `n` memories for the given project
+// ordered by descending timestamp. This is used when the AI wants to recall the
+// latest conversation context.
 func LastNEntries(db *sql.DB, project string, n int) ([]MemoryEntry, error) {
 	stmt, err := db.Prepare(`SELECT id, project, role, content, timestamp, importance FROM memory WHERE project = ? ORDER BY timestamp DESC LIMIT ?`)
 	if err != nil {
@@ -88,7 +102,9 @@ func LastNEntries(db *sql.DB, project string, n int) ([]MemoryEntry, error) {
 	return entries, nil
 }
 
-// TopImportantEntries retrieves the top n most important records for a project ordered by importance descending.
+// TopImportantEntries fetches the `n` highest ranked memories for a project.
+// Entries are sorted primarily by the Importance column which allows the AI to
+// recall key information regardless of when it was added.
 func TopImportantEntries(db *sql.DB, project string, n int) ([]MemoryEntry, error) {
 	stmt, err := db.Prepare(`SELECT id, project, role, content, timestamp, importance FROM memory WHERE project = ? ORDER BY importance DESC, timestamp DESC LIMIT ?`)
 	if err != nil {
@@ -115,13 +131,17 @@ func TopImportantEntries(db *sql.DB, project string, n int) ([]MemoryEntry, erro
 	return entries, nil
 }
 
-// AddProject inserts a project name if it doesn't already exist.
+// AddProject inserts a project name into the projects table if it does not
+// already exist. Projects segment stored conversations so multiple contexts can
+// be maintained.
 func AddProject(db *sql.DB, name string) error {
 	_, err := db.Exec(`INSERT OR IGNORE INTO projects(name) VALUES(?)`, name)
 	return err
 }
 
-// DeleteProject removes a project from the table and associated settings.
+// DeleteProject removes a project from the projects table and clears related
+// settings such as the active project. Memory records themselves are not
+// removed which allows historical data inspection if needed.
 func DeleteProject(db *sql.DB, name string) error {
 	if _, err := db.Exec(`DELETE FROM projects WHERE name = ?`, name); err != nil {
 		return err
@@ -137,7 +157,8 @@ func DeleteProject(db *sql.DB, name string) error {
 	return err
 }
 
-// RenameProject changes a project's name across tables.
+// ListProjects fetches the names of all stored projects sorted alphabetically.
+// This is used by both the CLI and HTTP API to enumerate available contexts.
 func RenameProject(db *sql.DB, oldName, newName string) error {
 	tx, err := db.Begin()
 	if err != nil {
@@ -183,13 +204,16 @@ func ListProjects(db *sql.DB) ([]string, error) {
 	return res, nil
 }
 
-// SetActiveProject marks the given project as the active one.
+// SetActiveProject updates the settings table so that the supplied project is
+// considered the current context. Subsequent memory operations will default to
+// this project.
 func SetActiveProject(db *sql.DB, name string) error {
 	_, err := db.Exec(`INSERT OR REPLACE INTO settings(key, value) VALUES('active_project', ?)`, name)
 	return err
 }
 
-// GetActiveProject retrieves the current active project name.
+// GetActiveProject returns the project currently marked as active. An empty
+// string indicates that no active project is set.
 func GetActiveProject(db *sql.DB) (string, error) {
 	row := db.QueryRow(`SELECT value FROM settings WHERE key = 'active_project'`)
 	var name string
@@ -200,7 +224,9 @@ func GetActiveProject(db *sql.DB) (string, error) {
 	return name, err
 }
 
-// AddMemory opens the default DB and stores a memory entry.
+// AddMemory is a convenience wrapper that opens the default database file,
+// records a memory entry and closes the connection. It is primarily used by
+// higher level interfaces such as the CLI.
 func AddMemory(project, role, content string, importance ...int) error {
 	db, err := InitDB()
 	if err != nil {

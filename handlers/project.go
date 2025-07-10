@@ -8,13 +8,20 @@ import (
 	"local-ai/memory"
 )
 
+// This file implements HTTP handlers for managing assistant projects. Projects
+// allow the AI to maintain multiple independent memory banks.
+
 // ProjectsResponse is returned by GET /projects
 type ProjectsResponse struct {
+	// Projects contains the list of all known project names.
 	Projects []string `json:"projects"`
-	Active   string   `json:"active"`
+	// Active indicates which project is currently selected.
+	Active string `json:"active"`
 }
 
-// ProjectsHandler handles listing and creating projects.
+// ProjectsHandler handles listing and creating projects. It responds to both
+// GET and POST on the /projects endpoint and interacts with the memory package
+// for persistence.
 func ProjectsHandler(w http.ResponseWriter, r *http.Request) {
 	db, err := memory.InitDB()
 	if err != nil {
@@ -22,6 +29,9 @@ func ProjectsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
+
+	// Additional HTTP methods (PUT for rename etc.) could be supported here
+	// in the future.
 
 	switch r.Method {
 	case http.MethodGet:
@@ -50,12 +60,14 @@ func ProjectsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// SwitchProjectHandler sets the active project.
+// SwitchProjectHandler sets the active project. Clients post a project name to
+// /projects/switch to change context for subsequent chat operations.
 func SwitchProjectHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	// Use the shared memory database to update the active project setting.
 	db, err := memory.InitDB()
 	if err != nil {
 		http.Error(w, "db error", http.StatusInternalServerError)
@@ -76,17 +88,21 @@ func SwitchProjectHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// DeleteProjectHandler deletes a project with /projects/{name}
+// DeleteProjectHandler removes a project identified by /projects/{name}. It
+// will also unset the active project if that project is being deleted.
 func DeleteProjectHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	// Extract the project name from the URL path.
 	name := strings.TrimPrefix(r.URL.Path, "/projects/")
 	if name == "" {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
+	// Remove the project using the memory package which will also tidy up
+	// any associated settings.
 	db, err := memory.InitDB()
 	if err != nil {
 		http.Error(w, "db error", http.StatusInternalServerError)
