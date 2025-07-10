@@ -26,11 +26,13 @@ var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Start the Codex web server",
 	Run: func(cmd *cobra.Command, args []string) {
-		http.HandleFunc("/chat", handlers2.ChatHandler)
-		http.HandleFunc("/projects", handlers2.ProjectsHandler)
-		http.HandleFunc("/projects/switch", handlers2.SwitchProjectHandler)
-		http.HandleFunc("/projects/rename", handlers2.RenameProjectHandler)
-		http.HandleFunc("/projects/", handlers2.DeleteProjectHandler)
+		// All API endpoints are now grouped under the /api prefix so the
+		// root path only serves the client UI.
+		http.HandleFunc("/api/chat", handlers2.ChatHandler)
+		http.HandleFunc("/api/projects", handlers2.ProjectsHandler)
+		http.HandleFunc("/api/projects/switch", handlers2.SwitchProjectHandler)
+		http.HandleFunc("/api/projects/rename", handlers2.RenameProjectHandler)
+		http.HandleFunc("/api/projects/", handlers2.DeleteProjectHandler)
 
 		// Serve index.html at "/" only
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

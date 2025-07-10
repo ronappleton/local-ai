@@ -42,7 +42,7 @@ func TestChatHandlerSuccess(t *testing.T) {
 	}
 
 	body := bytes.NewBufferString(`{"prompt":"hi"}`)
-	req := httptest.NewRequest(http.MethodPost, "/chat", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/chat", body)
 	w := httptest.NewRecorder()
 	ChatHandler(w, req)
 	res := w.Result()
@@ -61,7 +61,7 @@ func TestChatHandlerSuccess(t *testing.T) {
 // TestChatHandlerMethod confirms that ChatHandler rejects non-POST requests
 // with a method-not-allowed status.
 func TestChatHandlerMethod(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/chat", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/chat", nil)
 	w := httptest.NewRecorder()
 	ChatHandler(w, req)
 	if w.Result().StatusCode != http.StatusMethodNotAllowed {

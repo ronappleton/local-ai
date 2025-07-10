@@ -13,7 +13,7 @@ import (
 // This file implements HTTP handlers for managing assistant projects. Projects
 // allow the AI to maintain multiple independent memory banks.
 
-// ProjectsResponse is returned by GET /projects
+// ProjectsResponse is returned by GET /api/projects
 type ProjectsResponse struct {
 	// Projects contains the list of all known project names.
 	Projects []string `json:"projects"`
@@ -22,7 +22,7 @@ type ProjectsResponse struct {
 }
 
 // ProjectsHandler handles listing and creating projects. It responds to both
-// GET and POST on the /projects endpoint and interacts with the memory package
+// GET and POST on the /api/projects endpoint and interacts with the memory package
 // for persistence. Extension Point: additional methods such as PUT could be
 // added here to extend project metadata management.
 func ProjectsHandler(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +64,7 @@ func ProjectsHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // SwitchProjectHandler sets the active project. Clients post a project name to
-// /projects/switch to change context for subsequent chat operations. AI
+// /api/projects/switch to change context for subsequent chat operations. AI
 // Awareness: by switching project, the assistant focuses memory queries on a
 // different conversation context.
 func SwitchProjectHandler(w http.ResponseWriter, r *http.Request) {
@@ -93,7 +93,7 @@ func SwitchProjectHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-// DeleteProjectHandler removes a project identified by /projects/{name}. It
+// DeleteProjectHandler removes a project identified by /api/projects/{name}. It
 // will also unset the active project if that project is being deleted. This is
 // primarily used by the CLI and HTTP API when the user wants to discard a
 // conversation history.
@@ -102,8 +102,9 @@ func DeleteProjectHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	// Extract the project name from the URL path.
-	name := strings.TrimPrefix(r.URL.Path, "/projects/")
+	// Extract the project name from the URL path. Requests are routed with
+	// the /api prefix so we strip that as well.
+	name := strings.TrimPrefix(r.URL.Path, "/api/projects/")
 	if name == "" {
 		http.Error(w, "not found", http.StatusNotFound)
 		return

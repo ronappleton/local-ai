@@ -62,19 +62,19 @@
         },
         methods: {
             async loadProjects() {
-                const res = await fetch('/projects');
+                const res = await fetch('/api/projects');
                 const data = await res.json();
                 this.projects = data.projects;
                 this.activeProject = data.active || '';
             },
             async addProject() {
                 if(!this.newProject) return;
-                await fetch('/projects', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name:this.newProject})});
+                await fetch('/api/projects', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name:this.newProject})});
                 this.newProject='';
                 this.loadProjects();
             },
             async switchProject(name) {
-                await fetch('/projects/switch', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name})});
+                await fetch('/api/projects/switch', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name})});
                 this.activeProject = name;
                 this.messages = [];
             },
@@ -84,7 +84,7 @@
                 const currentPrompt = this.prompt;
                 this.prompt='';
                 this.loading = true;
-                const res = await fetch('/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:currentPrompt})});
+                const res = await fetch('/api/chat', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt:currentPrompt})});
                 const data = await res.json();
                 this.messages.push({id:Date.now()+1, role:'assistant', content:data.response});
                 this.loading=false;

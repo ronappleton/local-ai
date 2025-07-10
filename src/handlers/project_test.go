@@ -31,7 +31,7 @@ func TestProjectAPI(t *testing.T) {
 
 	// create project p1
 	body := bytes.NewBufferString(`{"name":"p1"}`)
-	req := httptest.NewRequest(http.MethodPost, "/projects", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/projects", body)
 	w := httptest.NewRecorder()
 	ProjectsHandler(w, req)
 	if w.Result().StatusCode != http.StatusCreated {
@@ -40,7 +40,7 @@ func TestProjectAPI(t *testing.T) {
 
 	// switch to p1
 	body = bytes.NewBufferString(`{"name":"p1"}`)
-	req = httptest.NewRequest(http.MethodPost, "/projects/switch", body)
+	req = httptest.NewRequest(http.MethodPost, "/api/projects/switch", body)
 	w = httptest.NewRecorder()
 	SwitchProjectHandler(w, req)
 	if w.Result().StatusCode != http.StatusOK {
@@ -48,7 +48,7 @@ func TestProjectAPI(t *testing.T) {
 	}
 
 	// list
-	req = httptest.NewRequest(http.MethodGet, "/projects", nil)
+	req = httptest.NewRequest(http.MethodGet, "/api/projects", nil)
 	w = httptest.NewRecorder()
 	ProjectsHandler(w, req)
 	var resp ProjectsResponse
@@ -61,7 +61,7 @@ func TestProjectAPI(t *testing.T) {
 
 	// rename project p1 to p2
 	body = bytes.NewBufferString(`{"old":"p1","new":"p2"}`)
-	req = httptest.NewRequest(http.MethodPost, "/projects/rename", body)
+	req = httptest.NewRequest(http.MethodPost, "/api/projects/rename", body)
 	w = httptest.NewRecorder()
 	RenameProjectHandler(w, req)
 	if w.Result().StatusCode != http.StatusOK {
@@ -69,7 +69,7 @@ func TestProjectAPI(t *testing.T) {
 	}
 
 	// verify rename
-	req = httptest.NewRequest(http.MethodGet, "/projects", nil)
+	req = httptest.NewRequest(http.MethodGet, "/api/projects", nil)
 	w = httptest.NewRecorder()
 	ProjectsHandler(w, req)
 	if err := json.NewDecoder(w.Result().Body).Decode(&resp); err != nil {
@@ -80,7 +80,7 @@ func TestProjectAPI(t *testing.T) {
 	}
 
 	// delete
-	req = httptest.NewRequest(http.MethodDelete, "/projects/p1", nil)
+	req = httptest.NewRequest(http.MethodDelete, "/api/projects/p1", nil)
 	w = httptest.NewRecorder()
 	DeleteProjectHandler(w, req)
 	if w.Result().StatusCode != http.StatusOK {
