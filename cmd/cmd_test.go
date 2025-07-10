@@ -13,6 +13,7 @@ func TestAddCommand(t *testing.T) {
 	defer os.Chdir(cwd)
 	os.Chdir(dir)
 
+	addCmd.Flags().Set("importance", "4")
 	addCmd.Run(addCmd, []string{"proj", "user", "hello"})
 
 	db, err := memory.InitDB()
@@ -25,7 +26,7 @@ func TestAddCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LastNEntries error: %v", err)
 	}
-	if len(entries) != 1 || entries[0].Content != "hello" {
+	if len(entries) != 1 || entries[0].Content != "hello" || entries[0].Importance != 4 {
 		t.Fatalf("unexpected entries: %+v", entries)
 	}
 }

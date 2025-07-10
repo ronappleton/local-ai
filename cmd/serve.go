@@ -15,7 +15,11 @@ var serveCmd = &cobra.Command{
 		http.HandleFunc("/chat", handlers.ChatHandler)
 		http.HandleFunc("/projects", handlers.ProjectsHandler)
 		http.HandleFunc("/projects/switch", handlers.SwitchProjectHandler)
+		http.HandleFunc("/projects/rename", handlers.RenameProjectHandler)
 		http.HandleFunc("/projects/", handlers.DeleteProjectHandler)
+		// serve the Vue.js client
+		fs := http.FileServer(http.Dir("/client"))
+		http.Handle("/", fs)
 		log.Println("Codex API running on http://localhost:8081")
 		log.Fatal(http.ListenAndServe(":8081", nil))
 	},

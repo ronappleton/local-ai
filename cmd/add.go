@@ -6,6 +6,8 @@ import (
 	"local-ai/memory"
 )
 
+var importance int
+
 var addCmd = &cobra.Command{
 	Use:   "add [project] [role] [content]",
 	Short: "Add memory to the assistant",
@@ -15,7 +17,7 @@ var addCmd = &cobra.Command{
 		role := args[1]
 		content := args[2]
 
-		if err := memory.AddMemory(project, role, content); err != nil {
+		if err := memory.AddMemory(project, role, content, importance); err != nil {
 			fmt.Println("Error:", err)
 		} else {
 			fmt.Println("Memory added.")
@@ -24,5 +26,6 @@ var addCmd = &cobra.Command{
 }
 
 func init() {
+	addCmd.Flags().IntVarP(&importance, "importance", "i", 0, "importance score")
 	rootCmd.AddCommand(addCmd)
 }

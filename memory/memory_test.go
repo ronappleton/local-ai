@@ -61,7 +61,7 @@ func TestAddMemory(t *testing.T) {
 	defer os.Chdir(cwd)
 	os.Chdir(dir)
 
-	if err := AddMemory("proj", "user", "hello"); err != nil {
+	if err := AddMemory("proj", "user", "hello", 2); err != nil {
 		t.Fatalf("AddMemory error: %v", err)
 	}
 
@@ -75,7 +75,7 @@ func TestAddMemory(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LastNEntries error: %v", err)
 	}
-	if len(entries) != 1 || entries[0].Content != "hello" {
+	if len(entries) != 1 || entries[0].Content != "hello" || entries[0].Importance != 2 {
 		t.Fatalf("unexpected entries: %+v", entries)
 	}
 }
@@ -115,5 +115,45 @@ func TestProjectManagement(t *testing.T) {
 	active, _ = GetActiveProject(db)
 	if active != "" {
 		t.Fatalf("expected no active project")
+	}
+}
+
+func TestRenameProject(t *testing.T) {
+	dir := t.TempDir()
+	cwd, _ := os.Getwd()
+	defer os.Chdir(cwd)
+	os.Chdir(dir)
+
+	db, err := InitDB()
+	if err != nil {
+		t.Fatalf("InitDB error: %v", err)
+	}
+	defer db.Close()
+
+	if err := AddProject(db, "old"); err != nil {
+		t.Fatalf("add: %v", err)
+	}
+	if err := SetActiveProject(db, "old"); err != nil {
+		t.Fatalf("set active: %v", err)
+	}
+	if err := AddEntry(db, "old", "user", "hello"); err != nil {
+		t.Fatalf("add entry: %v", err)
+	}
+
+	if err := RenameProject(db, "old", "new"); err != nil {
+		t.Fatalf("rename: %v", err)
+	}
+
+	list, _ := ListProjects(db)
+	if len(list) != 1 || list[0] != "new" {
+		t.Fatalf("unexpected list: %+v", list)
+	}
+	active, _ := GetActiveProject(db)
+	if active != "new" {
+		t.Fatalf("active not updated: %s", active)
+	}
+	entries, _ := LastNEntries(db, "new", 1)
+	if len(entries) != 1 || entries[0].Project != "new" {
+		t.Fatalf("entries not renamed: %+v", entries)
 	}
 }

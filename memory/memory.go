@@ -137,6 +137,31 @@ func DeleteProject(db *sql.DB, name string) error {
 	return err
 }
 
+// RenameProject changes a project's name across tables.
+func RenameProject(db *sql.DB, oldName, newName string) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	if _, err := tx.Exec(`UPDATE projects SET name = ? WHERE name = ?`, newName, oldName); err != nil {
+		tx.Rollback()
+		return err
+	}
+	if _, err := tx.Exec(`UPDATE memory SET project = ? WHERE project = ?`, newName, oldName); err != nil {
+		tx.Rollback()
+		return err
+	}
+	var active string
+	tx.QueryRow(`SELECT value FROM settings WHERE key = 'active_project'`).Scan(&active)
+	if active == oldName {
+		if _, err := tx.Exec(`UPDATE settings SET value = ? WHERE key = 'active_project'`, newName); err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
 // ListProjects returns all project names sorted alphabetically.
 func ListProjects(db *sql.DB) ([]string, error) {
 	rows, err := db.Query(`SELECT name FROM projects ORDER BY name`)
@@ -176,22 +201,11 @@ func GetActiveProject(db *sql.DB) (string, error) {
 }
 
 // AddMemory opens the default DB and stores a memory entry.
-func AddMemory(project, role, content string) error {
+func AddMemory(project, role, content string, importance ...int) error {
 	db, err := InitDB()
 	if err != nil {
 		return err
 	}
 	defer db.Close()
-	return AddEntry(db, project, role, content)
+	return AddEntry(db, project, role, content, importance...)
 }
-
-//// AddMemory is a helper that opens the database, adds the entry, and closes the
-//// connection. It is convenient for simple use cases like the CLI command.
-//func AddMemory(project, role, content string, importance ...int) error {
-//	db, err := InitDB()
-//	if err != nil {
-//		return err
-//	}
-//	defer db.Close()
-//	return AddEntry(db, project, role, content, importance...)
-//}

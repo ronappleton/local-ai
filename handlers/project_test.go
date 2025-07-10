@@ -50,6 +50,26 @@ func TestProjectAPI(t *testing.T) {
 		t.Fatalf("unexpected list %+v", resp)
 	}
 
+	// rename project p1 to p2
+	body = bytes.NewBufferString(`{"old":"p1","new":"p2"}`)
+	req = httptest.NewRequest(http.MethodPost, "/projects/rename", body)
+	w = httptest.NewRecorder()
+	RenameProjectHandler(w, req)
+	if w.Result().StatusCode != http.StatusOK {
+		t.Fatalf("rename failed")
+	}
+
+	// verify rename
+	req = httptest.NewRequest(http.MethodGet, "/projects", nil)
+	w = httptest.NewRecorder()
+	ProjectsHandler(w, req)
+	if err := json.NewDecoder(w.Result().Body).Decode(&resp); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if len(resp.Projects) != 1 || resp.Projects[0] != "p2" || resp.Active != "p2" {
+		t.Fatalf("unexpected list after rename %+v", resp)
+	}
+
 	// delete
 	req = httptest.NewRequest(http.MethodDelete, "/projects/p1", nil)
 	w = httptest.NewRecorder()
