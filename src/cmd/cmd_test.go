@@ -88,8 +88,8 @@ func TestPromoteUserCommand(t *testing.T) {
 	}
 	defer db.Close()
 	u, err := auth.GetByUsername(db, "eve")
-	if err != nil || !u.Admin {
-		t.Fatalf("user not promoted: %+v err:%v", u, err)
+	if err != nil || !u.Admin || !u.Verified {
+		t.Fatalf("user not promoted/verified: %+v err:%v", u, err)
 	}
 }
 
