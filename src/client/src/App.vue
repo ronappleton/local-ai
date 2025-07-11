@@ -43,6 +43,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
+import { fetchUsers, type User } from './api'
 import ChatLayout from './components/ChatLayout.vue'
 import Login from './components/Login.vue'
 import AdminLayout from './components/AdminLayout.vue'
@@ -84,14 +85,11 @@ function parseSession() {
 async function fetchUsername() {
   if (!loggedIn.value || userId.value === null) return
   try {
-    const res = await fetch('/api/users')
-    if (res.ok) {
-      const users = await res.json()
-      const u = users.find((u: any) => u.id === userId.value)
-      if (u) {
-        username.value = u.username
-        isAdmin.value = u.admin === true || u.admin === 1
-      }
+    const users = await fetchUsers()
+    const u = users.find((user) => user.id === userId.value)
+    if (u) {
+      username.value = u.username
+      isAdmin.value = u.admin === true || u.admin === 1
     }
   } catch {}
 }
