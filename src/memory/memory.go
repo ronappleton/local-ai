@@ -67,6 +67,15 @@ func InitDB() (*sql.DB, error) {
 	}
 	// attempt to add admin column if the table already existed without it
 	db.Exec(`ALTER TABLE users ADD COLUMN admin INTEGER DEFAULT 0`)
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS tokens (
+               token TEXT PRIMARY KEY,
+               user_id INTEGER,
+               type TEXT,
+               expires DATETIME
+       );`); err != nil {
+		db.Close()
+		return nil, err
+	}
 	return db, nil
 }
 

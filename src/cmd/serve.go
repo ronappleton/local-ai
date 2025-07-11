@@ -38,6 +38,9 @@ var serveCmd = &cobra.Command{
 		http.HandleFunc("/api/login", handlers2.LoginHandler)
 		http.HandleFunc("/api/logout", handlers2.LogoutHandler)
 		http.HandleFunc("/api/users", handlers2.WithAdmin(handlers2.UsersHandler))
+		http.HandleFunc("/api/verify", handlers2.VerifyHandler)
+		http.HandleFunc("/api/reset/request", handlers2.ResetRequestHandler)
+		http.HandleFunc("/api/reset", handlers2.ResetPasswordHandler)
 
 		// Serve the web UI. Prefer the built client under /client when
 		// running in Docker, but fall back to the source directory for
