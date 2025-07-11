@@ -41,7 +41,8 @@ func TestProjectAPI(t *testing.T) {
 	cleanup := setupTempDB(t)
 	defer cleanup()
 
-	cookie := &http.Cookie{Name: "session", Value: "1"}
+	val, _ := sc.Encode("session", 1)
+	cookie := &http.Cookie{Name: "session", Value: val}
 
 	// create project p1
 	body := bytes.NewBufferString(`{"name":"p1"}`)

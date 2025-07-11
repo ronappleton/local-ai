@@ -67,7 +67,8 @@ func TestChatHandlerSuccess(t *testing.T) {
 
 	body := bytes.NewBufferString(`{"prompt":"hi"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/chat", body)
-	req.AddCookie(&http.Cookie{Name: "session", Value: "1"})
+	val, _ := sc.Encode("session", 1)
+	req.AddCookie(&http.Cookie{Name: "session", Value: val})
 	w := httptest.NewRecorder()
 	WithAuth(ChatHandler)(w, req)
 	res := w.Result()
