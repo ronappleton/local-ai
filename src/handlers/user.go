@@ -10,7 +10,6 @@ import (
 	"codex/src/memory"
 	"encoding/json"
 	"net/http"
-	"strconv"
 )
 
 // RegisterHandler creates a new user account.
@@ -59,13 +58,16 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
-	http.SetCookie(w, &http.Cookie{Name: "session", Value: strconv.Itoa(u.ID), Path: "/"})
+	if err := setSessionCookie(w, u.ID); err != nil {
+		http.Error(w, "server error", http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 }
 
 // LogoutHandler clears the session cookie.
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, &http.Cookie{Name: "session", Value: "", Path: "/", MaxAge: -1})
+	clearSessionCookie(w)
 	w.WriteHeader(http.StatusOK)
 }
 

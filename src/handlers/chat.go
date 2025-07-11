@@ -47,7 +47,13 @@ func ensureAnonCookie(w http.ResponseWriter, r *http.Request) string {
 	b := make([]byte, 8)
 	if _, err := rand.Read(b); err == nil {
 		id := hex.EncodeToString(b)
-		http.SetCookie(w, &http.Cookie{Name: "anon", Value: id, Path: "/"})
+		http.SetCookie(w, &http.Cookie{
+			Name:     "anon",
+			Value:    id,
+			Path:     "/",
+			Secure:   true,
+			SameSite: http.SameSiteStrictMode,
+		})
 		return id
 	}
 	return ""
