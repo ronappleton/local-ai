@@ -48,7 +48,6 @@ function parseSession() {
   if (match) {
     loggedIn.value = true
     userId.value = parseInt(match[1])
-    isAdmin.value = userId.value === 1
   }
 }
 
@@ -59,7 +58,10 @@ async function fetchUsername() {
     if (res.ok) {
       const users = await res.json()
       const u = users.find((u: any) => u.id === userId.value)
-      if (u) username.value = u.username
+      if (u) {
+        username.value = u.username
+        isAdmin.value = u.admin === true || u.admin === 1
+      }
     }
   } catch {}
 }

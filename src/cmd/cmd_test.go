@@ -66,3 +66,29 @@ func TestCreateUserCommand(t *testing.T) {
 		t.Fatalf("user not created: %v", err)
 	}
 }
+
+func TestPromoteUserCommand(t *testing.T) {
+	dir := t.TempDir()
+	cwd, _ := os.Getwd()
+	defer os.Chdir(cwd)
+	os.Chdir(dir)
+
+	// create user first
+	if err := createUserCmd.RunE(createUserCmd, []string{"eve", "e@c.com", "pwd"}); err != nil {
+		t.Fatalf("create error: %v", err)
+	}
+	// promote
+	if err := promoteUserCmd.RunE(promoteUserCmd, []string{"eve"}); err != nil {
+		t.Fatalf("promote error: %v", err)
+	}
+
+	db, err := memory.InitDB()
+	if err != nil {
+		t.Fatalf("InitDB error: %v", err)
+	}
+	defer db.Close()
+	u, err := auth.GetByUsername(db, "eve")
+	if err != nil || !u.Admin {
+		t.Fatalf("user not promoted: %+v err:%v", u, err)
+	}
+}

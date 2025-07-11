@@ -56,6 +56,7 @@ docker-compose up
 - `codex models use [id]` – mark a downloaded model as active
 - `codex models status` – show the currently active model
 - `codex user create [username] [email] [password]` – create a user account
+- `codex user promote [username]` – grant admin rights to a user
 
 Run `codex [command] --help` for detailed flags.
 
