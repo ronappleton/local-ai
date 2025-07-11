@@ -17,7 +17,7 @@
       </div>
     </header>
 
-    <ChatLayout v-if="view==='chat'" class="flex-1" />
+    <ChatLayout v-if="view==='chat'" :logged-in="loggedIn" class="flex-1" />
     <AdminLayout v-else class="flex-1" />
 
     <div v-if="showLogin" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
