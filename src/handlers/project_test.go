@@ -10,6 +10,9 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+
+	"codex/src/auth"
+	"codex/src/memory"
 )
 
 // setupTempDB creates a temporary working directory and initialises the SQLite
@@ -19,6 +22,15 @@ func setupTempDB(t *testing.T) func() {
 	dir := t.TempDir()
 	cwd, _ := os.Getwd()
 	os.Chdir(dir)
+	db, err := memory.InitDB()
+	if err != nil {
+		t.Fatalf("InitDB: %v", err)
+	}
+	if err := auth.CreateUser(db, "bob", "b@c.com", "pwd"); err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	auth.MarkVerified(db, 1)
+	db.Close()
 	return func() { os.Chdir(cwd) }
 }
 
@@ -29,11 +41,14 @@ func TestProjectAPI(t *testing.T) {
 	cleanup := setupTempDB(t)
 	defer cleanup()
 
+	cookie := &http.Cookie{Name: "session", Value: "1"}
+
 	// create project p1
 	body := bytes.NewBufferString(`{"name":"p1"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/projects", body)
+	req.AddCookie(cookie)
 	w := httptest.NewRecorder()
-	ProjectsHandler(w, req)
+	WithAuth(ProjectsHandler)(w, req)
 	if w.Result().StatusCode != http.StatusCreated {
 		t.Fatalf("expected 201")
 	}
@@ -41,16 +56,18 @@ func TestProjectAPI(t *testing.T) {
 	// switch to p1
 	body = bytes.NewBufferString(`{"name":"p1"}`)
 	req = httptest.NewRequest(http.MethodPost, "/api/projects/switch", body)
+	req.AddCookie(cookie)
 	w = httptest.NewRecorder()
-	SwitchProjectHandler(w, req)
+	WithAuth(SwitchProjectHandler)(w, req)
 	if w.Result().StatusCode != http.StatusOK {
 		t.Fatalf("switch failed")
 	}
 
 	// list
 	req = httptest.NewRequest(http.MethodGet, "/api/projects", nil)
+	req.AddCookie(cookie)
 	w = httptest.NewRecorder()
-	ProjectsHandler(w, req)
+	WithAuth(ProjectsHandler)(w, req)
 	var resp ProjectsResponse
 	if err := json.NewDecoder(w.Result().Body).Decode(&resp); err != nil {
 		t.Fatalf("decode: %v", err)
@@ -62,16 +79,18 @@ func TestProjectAPI(t *testing.T) {
 	// rename project p1 to p2
 	body = bytes.NewBufferString(`{"old":"p1","new":"p2"}`)
 	req = httptest.NewRequest(http.MethodPost, "/api/projects/rename", body)
+	req.AddCookie(cookie)
 	w = httptest.NewRecorder()
-	RenameProjectHandler(w, req)
+	WithAuth(RenameProjectHandler)(w, req)
 	if w.Result().StatusCode != http.StatusOK {
 		t.Fatalf("rename failed")
 	}
 
 	// verify rename
 	req = httptest.NewRequest(http.MethodGet, "/api/projects", nil)
+	req.AddCookie(cookie)
 	w = httptest.NewRecorder()
-	ProjectsHandler(w, req)
+	WithAuth(ProjectsHandler)(w, req)
 	if err := json.NewDecoder(w.Result().Body).Decode(&resp); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
@@ -81,8 +100,9 @@ func TestProjectAPI(t *testing.T) {
 
 	// delete
 	req = httptest.NewRequest(http.MethodDelete, "/api/projects/p1", nil)
+	req.AddCookie(cookie)
 	w = httptest.NewRecorder()
-	DeleteProjectHandler(w, req)
+	WithAuth(DeleteProjectHandler)(w, req)
 	if w.Result().StatusCode != http.StatusOK {
 		t.Fatalf("delete failed")
 	}

@@ -29,15 +29,15 @@ var serveCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// All API endpoints are now grouped under the /api prefix so the
 		// root path only serves the client UI.
-		http.HandleFunc("/api/chat", handlers2.ChatHandler)
-		http.HandleFunc("/api/projects", handlers2.ProjectsHandler)
-		http.HandleFunc("/api/projects/switch", handlers2.SwitchProjectHandler)
-		http.HandleFunc("/api/projects/rename", handlers2.RenameProjectHandler)
-		http.HandleFunc("/api/projects/", handlers2.DeleteProjectHandler)
+		http.HandleFunc("/api/chat", handlers2.WithAuth(handlers2.ChatHandler))
+		http.HandleFunc("/api/projects", handlers2.WithAuth(handlers2.ProjectsHandler))
+		http.HandleFunc("/api/projects/switch", handlers2.WithAuth(handlers2.SwitchProjectHandler))
+		http.HandleFunc("/api/projects/rename", handlers2.WithAuth(handlers2.RenameProjectHandler))
+		http.HandleFunc("/api/projects/", handlers2.WithAuth(handlers2.DeleteProjectHandler))
 		http.HandleFunc("/api/register", handlers2.RegisterHandler)
 		http.HandleFunc("/api/login", handlers2.LoginHandler)
 		http.HandleFunc("/api/logout", handlers2.LogoutHandler)
-		http.HandleFunc("/api/users", handlers2.UsersHandler)
+		http.HandleFunc("/api/users", handlers2.WithAdmin(handlers2.UsersHandler))
 
 		// Serve the web UI. Prefer the built client under /client when
 		// running in Docker, but fall back to the source directory for

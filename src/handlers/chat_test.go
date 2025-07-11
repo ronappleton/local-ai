@@ -9,7 +9,11 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
+
+	"codex/src/auth"
+	"codex/src/memory"
 )
 
 // startMockLLM spins up a temporary HTTP server that mimics the behaviour of
@@ -32,6 +36,24 @@ func startMockLLM(t *testing.T) func() {
 	return srv.Close
 }
 
+// setupAuthed prepares a temporary database with a verified user and returns a
+// cleanup function. It is used to test endpoints that require authentication.
+func setupAuthed(t *testing.T) func() {
+	dir := t.TempDir()
+	cwd, _ := os.Getwd()
+	os.Chdir(dir)
+	db, err := memory.InitDB()
+	if err != nil {
+		t.Fatalf("InitDB: %v", err)
+	}
+	if err := auth.CreateUser(db, "bob", "b@c.com", "pwd"); err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	auth.MarkVerified(db, 1)
+	db.Close()
+	return func() { os.Chdir(cwd) }
+}
+
 // TestChatHandlerSuccess posts a prompt to ChatHandler and verifies that the
 // mocked LLM response is returned. This exercises the HTTP entry point used by
 // the web server.
@@ -40,11 +62,14 @@ func TestChatHandlerSuccess(t *testing.T) {
 	if closeSrv != nil {
 		defer closeSrv()
 	}
+	cleanup := setupAuthed(t)
+	defer cleanup()
 
 	body := bytes.NewBufferString(`{"prompt":"hi"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/chat", body)
+	req.AddCookie(&http.Cookie{Name: "session", Value: "1"})
 	w := httptest.NewRecorder()
-	ChatHandler(w, req)
+	WithAuth(ChatHandler)(w, req)
 	res := w.Result()
 	if res.StatusCode != http.StatusOK {
 		t.Fatalf("expected 200 got %d", res.StatusCode)
@@ -91,5 +116,16 @@ func TestChatHandlerMethod(t *testing.T) {
 	ChatHandler(w, req)
 	if w.Result().StatusCode != http.StatusMethodNotAllowed {
 		t.Fatalf("expected 405")
+	}
+}
+
+// TestAuthMiddlewareUnauthorized verifies that WithAuth blocks requests lacking
+// a valid session cookie.
+func TestAuthMiddlewareUnauthorized(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/api/chat", bytes.NewBufferString(`{"prompt":"hi"}`))
+	w := httptest.NewRecorder()
+	WithAuth(ChatHandler)(w, req)
+	if w.Result().StatusCode != http.StatusUnauthorized {
+		t.Fatalf("expected 401")
 	}
 }
