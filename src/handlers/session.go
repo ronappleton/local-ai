@@ -6,7 +6,10 @@ import (
 	"os"
 )
 
-var sc *securecookie.SecureCookie
+var (
+	sc           *securecookie.SecureCookie
+	cookieSecure bool
+)
 
 func init() {
 	hashKey := []byte(os.Getenv("CODEX_COOKIE_HASH"))
@@ -15,6 +18,10 @@ func init() {
 		hashKey = []byte("default-secret-change-me-----")
 	}
 	sc = securecookie.New(hashKey, nil)
+	// Use secure cookies only when explicitly enabled so local development
+	// over plain HTTP still functions. Set CODEX_COOKIE_SECURE=1 when
+	// deploying behind TLS to require HTTPS for cookies.
+	cookieSecure = os.Getenv("CODEX_COOKIE_SECURE") == "1"
 }
 
 func setSessionCookie(w http.ResponseWriter, id int) error {
@@ -26,8 +33,9 @@ func setSessionCookie(w http.ResponseWriter, id int) error {
 		Name:     "session",
 		Value:    encoded,
 		Path:     "/",
-		Secure:   true,
+		Secure:   cookieSecure,
 		SameSite: http.SameSiteStrictMode,
+		HttpOnly: true,
 	})
 	return nil
 }
@@ -38,8 +46,9 @@ func clearSessionCookie(w http.ResponseWriter) {
 		Value:    "",
 		Path:     "/",
 		MaxAge:   -1,
-		Secure:   true,
+		Secure:   cookieSecure,
 		SameSite: http.SameSiteStrictMode,
+		HttpOnly: true,
 	})
 }
 
