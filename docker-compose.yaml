@@ -8,11 +8,20 @@ services:
       - "8080:8080"
     command: ["--model", "/models/your-model.gguf"]
 
+  mail:
+    image: namshi/smtp
+    ports:
+      - "1025:25"
+
   codex:
     build: .
     depends_on:
       - llama
+      - mail
     ports:
       - "8081:8081"
+    environment:
+      - SMTP_ADDR=mail:25
+      - SMTP_FROM=codex@example.com
     volumes:
       - ./data:/data
