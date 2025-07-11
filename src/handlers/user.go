@@ -164,5 +164,8 @@ func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	auth.SetPassword(db, id, req.Password)
+	// Successfully resetting the password proves ownership of the account
+	// so mark the user as verified.
+	auth.MarkVerified(db, id)
 	w.WriteHeader(http.StatusOK)
 }
