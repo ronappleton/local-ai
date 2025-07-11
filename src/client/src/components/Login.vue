@@ -68,6 +68,9 @@
           : 'Need an account? Register'
       }}</a>
     </p>
+    <p v-if="mode === 'login'" class="text-sm text-center">
+      <a href="/reset/request/" class="underline">Forgot password?</a>
+    </p>
   </form>
 </template>
 

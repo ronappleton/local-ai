@@ -42,7 +42,7 @@ func SendReset(db *sql.DB, u *User) error {
 	if err != nil {
 		return err
 	}
-	link := "http://localhost:8081/reset?token=" + token
+	link := "http://localhost:8081/reset/?token=" + token
 	body := "Use this link to reset your password: " + link
 	return email.Send(u.Email, "Codex password reset", body)
 }
