@@ -20,17 +20,29 @@
     <ChatLayout v-if="view==='chat'" :logged-in="loggedIn" class="flex-1" />
     <AdminLayout v-else class="flex-1" />
 
-    <div v-if="showLogin" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-      <div class="bg-white p-4 rounded">
-        <Login />
-        <button class="mt-2 text-sm" @click="showLogin=false">Cancel</button>
+    <div
+      v-if="showLogin"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      role="dialog"
+      aria-modal="true"
+      @click.self="closeLogin"
+    >
+      <div class="relative bg-gray-800 text-gray-200 p-6 rounded-lg shadow-lg w-full max-w-md" aria-labelledby="auth-title">
+        <button
+          class="absolute top-2 right-2 text-gray-400 hover:text-white"
+          @click="closeLogin"
+          aria-label="Close login modal"
+        >
+          &times;
+        </button>
+        <Login @success="closeLogin" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import ChatLayout from './components/ChatLayout.vue'
 import Login from './components/Login.vue'
 import AdminLayout from './components/AdminLayout.vue'
@@ -42,6 +54,24 @@ const showLogin = ref(false)
 const username = ref('')
 const userId = ref<number | null>(null)
 const isAdmin = ref(false)
+
+function closeLogin() {
+  showLogin.value = false
+}
+
+function handleKey(e: KeyboardEvent) {
+  if (e.key === 'Escape') {
+    closeLogin()
+  }
+}
+
+watch(showLogin, (val) => {
+  if (val) {
+    window.addEventListener('keydown', handleKey)
+  } else {
+    window.removeEventListener('keydown', handleKey)
+  }
+})
 
 function parseSession() {
   const match = document.cookie.match(/session=(\d+)/)
