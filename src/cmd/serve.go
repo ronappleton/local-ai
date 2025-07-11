@@ -35,29 +35,27 @@ var serveCmd = &cobra.Command{
 		http.HandleFunc("/api/projects/rename", handlers2.RenameProjectHandler)
 		http.HandleFunc("/api/projects/", handlers2.DeleteProjectHandler)
 
-		// Serve index.html at "/" only
-		// Serve index.html at "/" only. When running in Docker the file
-		// is located under /client while local development keeps it in
-		// src/client. Attempt both locations so the server works in
-		// either environment.
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path != "/" {
-				http.NotFound(w, r)
-				return
-			}
-
-			// Potential locations of the UI file
-			paths := []string{"/client/index.html", "src/client/index.html"}
-			for _, p := range paths {
-				if _, err := os.Stat(p); err == nil {
-					log.Printf("Serving UI from %s", p)
-					http.ServeFile(w, r, p)
-					return
-				}
-			}
-			log.Printf("index.html not found in any known location")
-			http.NotFound(w, r)
-		})
+               // Serve the web UI. Prefer the built client under /client when
+               // running in Docker, but fall back to the source directory for
+               // local development.
+               uiDirs := []string{"/client", "src/client"}
+               var uiDir string
+               for _, d := range uiDirs {
+                       if _, err := os.Stat(d); err == nil {
+                               uiDir = d
+                               break
+                       }
+               }
+               if uiDir == "" {
+                       log.Printf("UI directory not found, root path disabled")
+                       http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+                               http.NotFound(w, r)
+                       })
+               } else {
+                       log.Printf("Serving UI from %s", uiDir)
+                       fs := http.FileServer(http.Dir(uiDir))
+                       http.Handle("/", fs)
+               }
 
 		log.Println("Codex API running on http://localhost:8081")
 		log.Fatal(http.ListenAndServe(":8081", nil))
