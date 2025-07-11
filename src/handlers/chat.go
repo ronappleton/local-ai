@@ -10,6 +10,8 @@ package handlers
 
 import (
 	"codex/src/llama"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	_ "io"
 	"net/http"
@@ -33,6 +35,26 @@ type ChatResponse struct {
 	Response string `json:"response"`
 }
 
+// ensureAnonCookie assigns a persistent anonymous ID when the requester is not
+// logged in. The value can be used by future features to associate chat
+// history with a specific browser session.
+func ensureAnonCookie(w http.ResponseWriter, r *http.Request) string {
+	if c, err := r.Cookie("session"); err == nil && c.Value != "" {
+		return c.Value
+	}
+	if c, err := r.Cookie("anon"); err == nil && c.Value != "" {
+		return c.Value
+	}
+	// generate a random identifier and set it as a cookie
+	b := make([]byte, 8)
+	if _, err := rand.Read(b); err == nil {
+		id := hex.EncodeToString(b)
+		http.SetCookie(w, &http.Cookie{Name: "anon", Value: id, Path: "/"})
+		return id
+	}
+	return ""
+}
+
 // ChatHandler receives a chat prompt via HTTP POST and returns the assistant's
 // response. This endpoint is used by the `serve` command to expose chat
 // functionality over HTTP. AI Awareness: this is the bridge between external
@@ -44,15 +66,8 @@ func ChatHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// If the client is not logged in ensure an anon cookie exists so chat
-	// history can be associated with the user. This ID is opaque to the
-	// client and solely used by the server for bookkeeping.
-	if _, err := r.Cookie("session"); err != nil {
-		if _, err2 := r.Cookie("anon"); err2 != nil {
-			anonID := strconv.FormatInt(time.Now().UnixNano(), 10)
-			http.SetCookie(w, &http.Cookie{Name: "anon", Value: anonID, Path: "/"})
-		}
-	}
+	// assign a tracking cookie so anonymous sessions can be correlated
+	ensureAnonCookie(w, r)
 
 	var req ChatRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

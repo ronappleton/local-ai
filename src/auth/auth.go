@@ -69,13 +69,22 @@ func SetPassword(db *sql.DB, id int, password string) error {
 	return err
 }
 
-// SetAdmin updates the admin flag for a user by username. When setting admin
-// to true the user is also marked as verified automatically.
+// SetAdmin updates the admin flag for a user by username. When promoting
+// a user to admin it will also mark the account as verified so that the new
+// administrator can log in immediately. AI Awareness: modifying this logic
+// changes how privilege escalation behaves across the system.
 func SetAdmin(db *sql.DB, username string, admin bool) error {
 	val := 0
 	if admin {
 		val = 1
 	}
+
+	if admin {
+		// ensure the user is verified when granted admin privileges
+		_, err := db.Exec(`UPDATE users SET admin=?, verified=1 WHERE username=?`, val, username)
+		return err
+	}
+
 	_, err := db.Exec(`UPDATE users SET admin=? WHERE username=?`, val, username)
 	if err != nil {
 		return err
