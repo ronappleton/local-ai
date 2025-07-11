@@ -1,5 +1,10 @@
 package handlers
 
+// This file provides HTTP endpoints for user account management including
+// registration, login, logout and listing users for the admin UI. It relies on
+// the auth package for credential handling and the memory package for database
+// access.
+
 import (
 	"codex/src/auth"
 	"codex/src/memory"
