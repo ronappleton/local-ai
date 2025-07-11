@@ -17,6 +17,7 @@ server and stores conversation history in a local SQLite database.
 - **Long‑term memory** stored in `memory.db`
 - **Hugging Face model downloader** with `codex models`
 - **Lightweight web client** under the `client/` directory
+- **Tailwind CSS** is used for styling the web client
 - **User accounts with optional 2FA** for login/logout
 - **Simple admin area** served from the web client
 - **Self-service registration** from the login popup

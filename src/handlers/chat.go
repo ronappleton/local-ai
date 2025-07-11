@@ -13,6 +13,8 @@ import (
 	"encoding/json"
 	_ "io"
 	"net/http"
+	"strconv"
+	"time"
 )
 
 // ChatRequest is the JSON payload accepted by the chat endpoint. It simply
@@ -40,6 +42,16 @@ func ChatHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
 		return
+	}
+
+	// If the client is not logged in ensure an anon cookie exists so chat
+	// history can be associated with the user. This ID is opaque to the
+	// client and solely used by the server for bookkeeping.
+	if _, err := r.Cookie("session"); err != nil {
+		if _, err2 := r.Cookie("anon"); err2 != nil {
+			anonID := strconv.FormatInt(time.Now().UnixNano(), 10)
+			http.SetCookie(w, &http.Cookie{Name: "anon", Value: anonID, Path: "/"})
+		}
 	}
 
 	var req ChatRequest
