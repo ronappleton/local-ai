@@ -13,6 +13,7 @@ import (
 	handlers2 "codex/src/handlers"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -35,11 +36,26 @@ var serveCmd = &cobra.Command{
 		http.HandleFunc("/api/projects/", handlers2.DeleteProjectHandler)
 
 		// Serve index.html at "/" only
+		// Serve index.html at "/" only. When running in Docker the file
+		// is located under /client while local development keeps it in
+		// src/client. Attempt both locations so the server works in
+		// either environment.
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == "/" {
-				http.ServeFile(w, r, "/client/index.html")
+			if r.URL.Path != "/" {
+				http.NotFound(w, r)
 				return
 			}
+
+			// Potential locations of the UI file
+			paths := []string{"/client/index.html", "src/client/index.html"}
+			for _, p := range paths {
+				if _, err := os.Stat(p); err == nil {
+					log.Printf("Serving UI from %s", p)
+					http.ServeFile(w, r, p)
+					return
+				}
+			}
+			log.Printf("index.html not found in any known location")
 			http.NotFound(w, r)
 		})
 
