@@ -77,6 +77,8 @@ var listCmd = &cobra.Command{
 // downloadCmd retrieves one or more model files from Hugging Face and updates
 // the local state file.  The --all flag downloads every model from the most
 // recently selected pipeline.
+// downloadAll controls whether `models download` should fetch every model from
+// the previously selected pipeline rather than a single ID.
 var downloadAll bool
 var downloadCmd = &cobra.Command{
 	Use:   "download [model-id]",
@@ -123,7 +125,13 @@ var downloadCmd = &cobra.Command{
 	},
 }
 
+// selectedPipeline stores the last pipeline type chosen via the `list`
+// subcommand so subsequent actions like `download --all` know which models to
+// operate on.
 var selectedPipeline string
+
+// forceDownload triggers re-download of model files even if they already exist
+// locally.
 var forceDownload bool
 
 // useCmd marks a previously downloaded model as the active one.  Only one
@@ -175,6 +183,9 @@ var statusCmd = &cobra.Command{
 	},
 }
 
+// init hooks the model subcommands into the root CLI during package
+// initialisation. Cobra relies on these init functions to assemble the command
+// tree before Execute is called.
 func init() {
 	rootCmd.AddCommand(modelsCmd)
 	modelsCmd.AddCommand(listCmd)
