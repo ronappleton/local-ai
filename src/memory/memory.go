@@ -53,6 +53,17 @@ func InitDB() (*sql.DB, error) {
 		db.Close()
 		return nil, err
 	}
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS users (
+               id INTEGER PRIMARY KEY AUTOINCREMENT,
+               username TEXT UNIQUE,
+               email TEXT UNIQUE,
+               password TEXT,
+               verified INTEGER DEFAULT 0,
+               totp_secret TEXT
+       );`); err != nil {
+		db.Close()
+		return nil, err
+	}
 	return db, nil
 }
 

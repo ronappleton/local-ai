@@ -17,6 +17,8 @@ server and stores conversation history in a local SQLite database.
 - **Long‑term memory** stored in `memory.db`
 - **Hugging Face model downloader** with `codex models`
 - **Lightweight web client** under the `client/` directory
+- **User accounts with optional 2FA** for login/logout
+- **Simple admin area** served from the web client
 
 ## Building
 
@@ -58,8 +60,8 @@ Run `codex [command] --help` for detailed flags.
 ## Data location
 
 All conversation history and project metadata are kept in `memory.db` in the
-working directory. Downloaded models are stored under `models/` with state
-tracked in `models/state.json`.
+working directory. User accounts are stored in the same file. Downloaded models
+are stored under `models/` with state tracked in `models/state.json`.
 
 ## Running tests
 
