@@ -24,38 +24,40 @@
       <button class="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-500">Change Password</button>
     </form>
     <script type="module">
-      const params = new URLSearchParams(location.search);
-      const token = params.get('token');
-      const msg = document.getElementById('msg');
-      if (!token) {
-        msg.textContent = 'Invalid reset link';
-      }
-      const pass1 = document.getElementById('pass1');
-      const pass2 = document.getElementById('pass2');
-      document.getElementById('toggle1').addEventListener('click', () => {
-        pass1.type = pass1.type === 'password' ? 'text' : 'password';
-      });
-      document.getElementById('toggle2').addEventListener('click', () => {
-        pass2.type = pass2.type === 'password' ? 'text' : 'password';
-      });
-      document.getElementById('reset-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        if (pass1.value !== pass2.value) {
-          msg.textContent = 'Passwords do not match';
-          return;
+      window.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(location.search);
+        const token = params.get('token');
+        const msg = document.getElementById('msg');
+        if (!token) {
+          msg.textContent = 'Invalid reset link';
         }
-        const res = await fetch('/api/reset', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ Token: token, Password: pass1.value })
+        const pass1 = document.getElementById('pass1');
+        const pass2 = document.getElementById('pass2');
+        document.getElementById('toggle1').addEventListener('click', () => {
+          pass1.type = pass1.type === 'password' ? 'text' : 'password';
         });
-        if (res.ok) {
-          msg.textContent = 'Password updated';
-          msg.classList.remove('text-red-400');
-          msg.classList.add('text-green-400');
-        } else {
-          msg.textContent = 'Reset failed';
-        }
+        document.getElementById('toggle2').addEventListener('click', () => {
+          pass2.type = pass2.type === 'password' ? 'text' : 'password';
+        });
+        document.getElementById('reset-form').addEventListener('submit', async (e) => {
+          e.preventDefault();
+          if (pass1.value !== pass2.value) {
+            msg.textContent = 'Passwords do not match';
+            return;
+          }
+          const res = await fetch('/api/reset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ Token: token, Password: pass1.value })
+          });
+          if (res.ok) {
+            msg.textContent = 'Password updated';
+            msg.classList.remove('text-red-400');
+            msg.classList.add('text-green-400');
+          } else {
+            msg.textContent = 'Reset failed';
+          }
+        });
       });
     </script>
   </body>
