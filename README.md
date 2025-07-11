@@ -19,6 +19,7 @@ server and stores conversation history in a local SQLite database.
 - **Lightweight web client** under the `client/` directory
 - **User accounts with optional 2FA** for login/logout
 - **Simple admin area** served from the web client
+- **Self-service registration** from the login popup
 
 ## Building
 
@@ -54,6 +55,7 @@ docker-compose up
 - `codex models download [id]` – download model files
 - `codex models use [id]` – mark a downloaded model as active
 - `codex models status` – show the currently active model
+- `codex user create [username] [email] [password]` – create a user account
 
 Run `codex [command] --help` for detailed flags.
 
