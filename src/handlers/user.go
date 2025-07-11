@@ -33,6 +33,10 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "db error", http.StatusInternalServerError)
 		return
 	}
+	u, err := auth.GetByUsername(db, req.Username)
+	if err == nil {
+		auth.SendVerification(db, u)
+	}
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -89,4 +93,76 @@ func UsersHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	json.NewEncoder(w).Encode(list)
+}
+
+// VerifyHandler marks an account as verified using a token sent via email.
+func VerifyHandler(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		http.NotFound(w, r)
+		return
+	}
+	db, err := memory.InitDB()
+	if err != nil {
+		http.Error(w, "db error", http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+	id, err := auth.ConsumeToken(db, token, "verify")
+	if err != nil {
+		http.Error(w, "invalid", http.StatusBadRequest)
+		return
+	}
+	auth.MarkVerified(db, id)
+	w.WriteHeader(http.StatusOK)
+}
+
+// ResetRequestHandler sends a password reset email when given an address.
+func ResetRequestHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct{ Email string }
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid", http.StatusBadRequest)
+		return
+	}
+	db, err := memory.InitDB()
+	if err != nil {
+		http.Error(w, "db error", http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+	u, err := auth.GetByEmail(db, req.Email)
+	if err == nil {
+		auth.SendReset(db, u)
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+// ResetPasswordHandler sets a new password using a reset token.
+func ResetPasswordHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct{ Token, Password string }
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid", http.StatusBadRequest)
+		return
+	}
+	db, err := memory.InitDB()
+	if err != nil {
+		http.Error(w, "db error", http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+	id, err := auth.ConsumeToken(db, req.Token, "reset")
+	if err != nil {
+		http.Error(w, "invalid", http.StatusBadRequest)
+		return
+	}
+	auth.SetPassword(db, id, req.Password)
+	w.WriteHeader(http.StatusOK)
 }

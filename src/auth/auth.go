@@ -1,8 +1,13 @@
 package auth
 
 import (
+	"crypto/rand"
 	"database/sql"
+	"encoding/hex"
 	"errors"
+	"time"
+
+	"codex/src/email"
 
 	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
@@ -19,6 +24,29 @@ type User struct {
 	Admin      bool
 }
 
+// SendVerification dispatches an email with a verification link for the user.
+// The email contains a token that expires after 24 hours.
+func SendVerification(db *sql.DB, u *User) error {
+	token, err := CreateToken(db, u.ID, "verify", 24*time.Hour)
+	if err != nil {
+		return err
+	}
+	link := "http://localhost:8081/api/verify?token=" + token
+	body := "Please verify your account by visiting: " + link
+	return email.Send(u.Email, "Verify your Codex account", body)
+}
+
+// SendReset dispatches a password reset email containing a short lived token.
+func SendReset(db *sql.DB, u *User) error {
+	token, err := CreateToken(db, u.ID, "reset", time.Hour)
+	if err != nil {
+		return err
+	}
+	link := "http://localhost:8081/reset?token=" + token
+	body := "Use this link to reset your password: " + link
+	return email.Send(u.Email, "Codex password reset", body)
+}
+
 // CreateUser inserts a new user with a hashed password.
 func CreateUser(db *sql.DB, username, email, password string) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -32,6 +60,25 @@ func CreateUser(db *sql.DB, username, email, password string) error {
 // GetByUsername fetches a user record by username.
 func GetByUsername(db *sql.DB, username string) (*User, error) {
 	row := db.QueryRow(`SELECT id, username, email, password, verified, totp_secret, admin FROM users WHERE username = ?`, username)
+	var u User
+	var verified int
+	var secret sql.NullString
+	var admin int
+	err := row.Scan(&u.ID, &u.Username, &u.Email, &u.Password, &verified, &secret, &admin)
+	if err != nil {
+		return nil, err
+	}
+	if secret.Valid {
+		u.TOTPSecret = secret.String
+	}
+	u.Verified = verified != 0
+	u.Admin = admin != 0
+	return &u, nil
+}
+
+// GetByEmail fetches a user record by email address.
+func GetByEmail(db *sql.DB, email string) (*User, error) {
+	row := db.QueryRow(`SELECT id, username, email, password, verified, totp_secret, admin FROM users WHERE email = ?`, email)
 	var u User
 	var verified int
 	var secret sql.NullString
@@ -180,4 +227,38 @@ func Authenticate(db *sql.DB, username, password, code string) (*User, error) {
 		return nil, errors.New("invalid totp")
 	}
 	return u, nil
+}
+
+// CreateToken inserts a single-use token for a user. Tokens expire after the
+// provided TTL and are stored in the tokens table alongside a type field so
+// they can be reused for multiple purposes (e.g. verification or password
+// resets).
+func CreateToken(db *sql.DB, userID int, typ string, ttl time.Duration) (string, error) {
+	tokenBytes := make([]byte, 16)
+	if _, err := rand.Read(tokenBytes); err != nil {
+		return "", err
+	}
+	token := hex.EncodeToString(tokenBytes)
+	expires := time.Now().Add(ttl)
+	_, err := db.Exec(`INSERT INTO tokens(token, user_id, type, expires) VALUES(?,?,?,?)`, token, userID, typ, expires)
+	return token, err
+}
+
+// ConsumeToken validates and removes a token returning the associated user id
+// if it exists and has not expired.
+func ConsumeToken(db *sql.DB, token, typ string) (int, error) {
+	row := db.QueryRow(`SELECT user_id, expires FROM tokens WHERE token=? AND type=?`, token, typ)
+	var userID int
+	var expires time.Time
+	if err := row.Scan(&userID, &expires); err != nil {
+		return 0, err
+	}
+	if time.Now().After(expires) {
+		return 0, errors.New("expired")
+	}
+	_, err := db.Exec(`DELETE FROM tokens WHERE token=?`, token)
+	if err != nil {
+		return 0, err
+	}
+	return userID, nil
 }
