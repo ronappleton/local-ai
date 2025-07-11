@@ -5,6 +5,7 @@ package cmd
 // common error scenarios.
 
 import (
+	"codex/src/auth"
 	"codex/src/memory"
 	"os"
 	"testing"
@@ -43,5 +44,25 @@ func TestExecuteInvalidCommand(t *testing.T) {
 	rootCmd.SetArgs([]string{"nonexist"})
 	if err := Execute(); err == nil {
 		t.Fatalf("expected error for invalid command")
+	}
+}
+func TestCreateUserCommand(t *testing.T) {
+	dir := t.TempDir()
+	cwd, _ := os.Getwd()
+	defer os.Chdir(cwd)
+	os.Chdir(dir)
+
+	if err := createUserCmd.RunE(createUserCmd, []string{"bob", "b@c.com", "pwd"}); err != nil {
+		t.Fatalf("command error: %v", err)
+	}
+
+	db, err := memory.InitDB()
+	if err != nil {
+		t.Fatalf("InitDB error: %v", err)
+	}
+	defer db.Close()
+	u, err := auth.GetByUsername(db, "bob")
+	if err != nil || u == nil {
+		t.Fatalf("user not created: %v", err)
 	}
 }
