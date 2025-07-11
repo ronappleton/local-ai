@@ -92,3 +92,32 @@ func TestPromoteUserCommand(t *testing.T) {
 		t.Fatalf("user not promoted: %+v err:%v", u, err)
 	}
 }
+
+func TestListUsersCommand(t *testing.T) {
+	dir := t.TempDir()
+	cwd, _ := os.Getwd()
+	defer os.Chdir(cwd)
+	os.Chdir(dir)
+
+	// create a couple users
+	if err := createUserCmd.RunE(createUserCmd, []string{"john", "j@c.com", "pwd"}); err != nil {
+		t.Fatalf("create error: %v", err)
+	}
+	if err := createUserCmd.RunE(createUserCmd, []string{"kate", "k@c.com", "pwd"}); err != nil {
+		t.Fatalf("create error: %v", err)
+	}
+
+	if err := listUsersCmd.RunE(listUsersCmd, []string{}); err != nil {
+		t.Fatalf("list error: %v", err)
+	}
+
+	db, err := memory.InitDB()
+	if err != nil {
+		t.Fatalf("InitDB error: %v", err)
+	}
+	defer db.Close()
+	users, err := auth.List(db)
+	if err != nil || len(users) != 2 {
+		t.Fatalf("unexpected list: %+v err:%v", users, err)
+	}
+}

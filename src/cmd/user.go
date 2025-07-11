@@ -7,6 +7,7 @@ package cmd
 import (
 	"codex/src/auth"
 	"codex/src/memory"
+	"fmt"
 	"github.com/spf13/cobra"
 )
 
@@ -50,8 +51,30 @@ var promoteUserCmd = &cobra.Command{
 	},
 }
 
+// listUsersCmd prints all registered users.
+var listUsersCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List users",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		db, err := memory.InitDB()
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+		list, err := auth.List(db)
+		if err != nil {
+			return err
+		}
+		for _, u := range list {
+			fmt.Printf("%s\t%s\tadmin:%v verified:%v\n", u.Username, u.Email, u.Admin, u.Verified)
+		}
+		return nil
+	},
+}
+
 func init() {
 	usersCmd.AddCommand(createUserCmd)
 	usersCmd.AddCommand(promoteUserCmd)
+	usersCmd.AddCommand(listUsersCmd)
 	rootCmd.AddCommand(usersCmd)
 }
