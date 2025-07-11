@@ -15,8 +15,6 @@ import (
 	"encoding/json"
 	_ "io"
 	"net/http"
-	"strconv"
-	"time"
 )
 
 // ChatRequest is the JSON payload accepted by the chat endpoint. It simply

@@ -48,6 +48,25 @@ func GetByUsername(db *sql.DB, username string) (*User, error) {
 	return &u, nil
 }
 
+// GetByID fetches a user record by numeric ID.
+func GetByID(db *sql.DB, id int) (*User, error) {
+	row := db.QueryRow(`SELECT id, username, email, password, verified, totp_secret, admin FROM users WHERE id = ?`, id)
+	var u User
+	var verified int
+	var secret sql.NullString
+	var admin int
+	err := row.Scan(&u.ID, &u.Username, &u.Email, &u.Password, &verified, &secret, &admin)
+	if err != nil {
+		return nil, err
+	}
+	if secret.Valid {
+		u.TOTPSecret = secret.String
+	}
+	u.Verified = verified != 0
+	u.Admin = admin != 0
+	return &u, nil
+}
+
 // VerifyPassword checks a plaintext password against the stored hash.
 func VerifyPassword(u *User, pass string) error {
 	return bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(pass))
