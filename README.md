@@ -48,6 +48,10 @@ services is via Docker Compose:
 docker-compose up
 ```
 
+The compose file includes an SMTP server under the `mail` service. The Codex
+container sends email notifications through this server using the environment
+variables `SMTP_ADDR` and `SMTP_FROM`.
+
 ### CLI commands
 
 - `codex add [project] [role] [content]` – store a message in memory
