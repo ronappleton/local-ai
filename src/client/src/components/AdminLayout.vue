@@ -9,12 +9,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-const users = ref([] as any[])
+import { fetchUsers, type User } from '../api'
+const users = ref<User[]>([])
 
 onMounted(async () => {
-  const res = await fetch('/api/users')
-  if (res.ok) {
-    users.value = await res.json()
+  try {
+    users.value = await fetchUsers()
+  } catch {
+    users.value = []
   }
 })
 </script>
