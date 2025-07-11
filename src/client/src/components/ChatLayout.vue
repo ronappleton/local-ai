@@ -25,7 +25,7 @@
           </a>
         </li>
       </ul>
-      <div>
+      <div v-if="loggedIn">
         <h2 class="text-sm text-gray-400 uppercase mt-4 mb-2">Projects</h2>
         <ul class="space-y-1 pl-2">
           <li>
@@ -84,7 +84,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, defineProps } from 'vue'
+
+defineProps<{ loggedIn: boolean }>()
 
 const sidebarOpen = ref(false)
 const prompt = ref('')

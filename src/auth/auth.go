@@ -86,6 +86,13 @@ func SetAdmin(db *sql.DB, username string, admin bool) error {
 	}
 
 	_, err := db.Exec(`UPDATE users SET admin=? WHERE username=?`, val, username)
+	if err != nil {
+		return err
+	}
+	if admin {
+		// automatically verify the user when promoting to admin
+		_, err = db.Exec(`UPDATE users SET verified=1 WHERE username=?`, username)
+	}
 	return err
 }
 

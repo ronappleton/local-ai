@@ -58,6 +58,31 @@ func TestChatHandlerSuccess(t *testing.T) {
 	}
 }
 
+// TestAnonCookie ensures that an anonymous cookie is issued when the user is
+// not logged in. This helps associate chat history with unauthenticated users.
+func TestAnonCookie(t *testing.T) {
+	closeSrv := startMockLLM(t)
+	if closeSrv != nil {
+		defer closeSrv()
+	}
+
+	body := bytes.NewBufferString(`{"prompt":"hi"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/chat", body)
+	w := httptest.NewRecorder()
+	ChatHandler(w, req)
+	res := w.Result()
+	found := false
+	for _, c := range res.Cookies() {
+		if c.Name == "anon" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("anon cookie not set")
+	}
+}
+
 // TestChatHandlerMethod confirms that ChatHandler rejects non-POST requests
 // with a method-not-allowed status.
 func TestChatHandlerMethod(t *testing.T) {
