@@ -59,11 +59,14 @@ func InitDB() (*sql.DB, error) {
                email TEXT UNIQUE,
                password TEXT,
                verified INTEGER DEFAULT 0,
-               totp_secret TEXT
+               totp_secret TEXT,
+               admin INTEGER DEFAULT 0
        );`); err != nil {
 		db.Close()
 		return nil, err
 	}
+	// attempt to add admin column if the table already existed without it
+	db.Exec(`ALTER TABLE users ADD COLUMN admin INTEGER DEFAULT 0`)
 	return db, nil
 }
 

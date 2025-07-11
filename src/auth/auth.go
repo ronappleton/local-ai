@@ -16,6 +16,7 @@ type User struct {
 	Password   string
 	Verified   bool
 	TOTPSecret string
+	Admin      bool
 }
 
 // CreateUser inserts a new user with a hashed password.
@@ -30,11 +31,12 @@ func CreateUser(db *sql.DB, username, email, password string) error {
 
 // GetByUsername fetches a user record by username.
 func GetByUsername(db *sql.DB, username string) (*User, error) {
-	row := db.QueryRow(`SELECT id, username, email, password, verified, totp_secret FROM users WHERE username = ?`, username)
+	row := db.QueryRow(`SELECT id, username, email, password, verified, totp_secret, admin FROM users WHERE username = ?`, username)
 	var u User
 	var verified int
 	var secret sql.NullString
-	err := row.Scan(&u.ID, &u.Username, &u.Email, &u.Password, &verified, &secret)
+	var admin int
+	err := row.Scan(&u.ID, &u.Username, &u.Email, &u.Password, &verified, &secret, &admin)
 	if err != nil {
 		return nil, err
 	}
@@ -42,6 +44,7 @@ func GetByUsername(db *sql.DB, username string) (*User, error) {
 		u.TOTPSecret = secret.String
 	}
 	u.Verified = verified != 0
+	u.Admin = admin != 0
 	return &u, nil
 }
 
@@ -63,6 +66,16 @@ func SetPassword(db *sql.DB, id int, password string) error {
 		return err
 	}
 	_, err = db.Exec(`UPDATE users SET password=? WHERE id=?`, string(hash), id)
+	return err
+}
+
+// SetAdmin updates the admin flag for a user by username.
+func SetAdmin(db *sql.DB, username string, admin bool) error {
+	val := 0
+	if admin {
+		val = 1
+	}
+	_, err := db.Exec(`UPDATE users SET admin=? WHERE username=?`, val, username)
 	return err
 }
 
@@ -92,7 +105,7 @@ func VerifyTOTP(secret, code string) bool {
 
 // List returns all users for the admin API.
 func List(db *sql.DB) ([]User, error) {
-	rows, err := db.Query(`SELECT id, username, email, verified FROM users ORDER BY id`)
+	rows, err := db.Query(`SELECT id, username, email, verified, admin FROM users ORDER BY id`)
 	if err != nil {
 		return nil, err
 	}
@@ -101,10 +114,12 @@ func List(db *sql.DB) ([]User, error) {
 	for rows.Next() {
 		var u User
 		var verified int
-		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &verified); err != nil {
+		var admin int
+		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &verified, &admin); err != nil {
 			return nil, err
 		}
 		u.Verified = verified != 0
+		u.Admin = admin != 0
 		res = append(res, u)
 	}
 	if err := rows.Err(); err != nil {

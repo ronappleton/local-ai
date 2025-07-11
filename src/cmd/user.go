@@ -34,7 +34,24 @@ var createUserCmd = &cobra.Command{
 	},
 }
 
+// promoteUserCmd marks an existing user as an admin.
+var promoteUserCmd = &cobra.Command{
+	Use:   "promote [username]",
+	Short: "Promote a user to admin",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		username := args[0]
+		db, err := memory.InitDB()
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+		return auth.SetAdmin(db, username, true)
+	},
+}
+
 func init() {
 	usersCmd.AddCommand(createUserCmd)
+	usersCmd.AddCommand(promoteUserCmd)
 	rootCmd.AddCommand(usersCmd)
 }
