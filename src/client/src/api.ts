@@ -14,22 +14,7 @@ export async function fetchUsers(): Promise<User[]> {
   return res.json();
 }
 
-export interface ModelInfo {
-  modelId: string;
-  lastModified: string;
-  downloads: number;
-  tags: string[];
-}
 
-export async function fetchModels(pipeline: string): Promise<ModelInfo[]> {
-  const res = await fetch(
-    "/api/models?pipeline=" + encodeURIComponent(pipeline),
-  );
-  if (!res.ok) {
-    throw new Error("Failed to fetch models");
-  }
-  return res.json();
-}
 
 export interface Project {
   id: number;
@@ -98,28 +83,3 @@ export async function promoteUser(username: string): Promise<void> {
   }
 }
 
-export async function downloadModel(modelId: string): Promise<void> {
-  const res = await fetch("/api/models/" + encodeURIComponent(modelId) + "/download", {
-    method: "POST"
-  });
-  if (!res.ok) {
-    throw new Error("Failed to download model");
-  }
-}
-
-export async function setActiveModel(modelId: string): Promise<void> {
-  const res = await fetch("/api/models/" + encodeURIComponent(modelId) + "/activate", {
-    method: "POST"
-  });
-  if (!res.ok) {
-    throw new Error("Failed to set active model");
-  }
-}
-
-export async function getModelStatus(): Promise<{ activeModel: string }> {
-  const res = await fetch("/api/models/status");
-  if (!res.ok) {
-    throw new Error("Failed to get model status");
-  }
-  return res.json();
-}

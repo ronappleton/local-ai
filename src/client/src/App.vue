@@ -2,8 +2,8 @@
   <div class="flex flex-col h-full">
     <header class="flex justify-between items-center p-2 bg-gray-800 text-gray-200">
       <nav class="space-x-2">
-        <button @click="view='chat'">Chat</button>
-        <button v-if="loggedIn && isAdmin" @click="view='admin'">Admin</button>
+        <RouterLink to="/">Chat</RouterLink>
+        <RouterLink v-if="loggedIn && isAdmin" to="/admin/dashboard">Admin</RouterLink>
       </nav>
       <div class="relative">
         <button v-if="!loggedIn" @click="showLogin = true">Login</button>
@@ -11,14 +11,18 @@
           {{ username }}
         </div>
         <div v-if="dropdownOpen" class="absolute right-0 bg-gray-700 text-white mt-1 rounded shadow-md py-1 px-2 space-y-1">
-          <button v-if="isAdmin" @click="view='admin'; dropdownOpen=false" class="block w-full text-left">Admin</button>
+          <RouterLink
+            v-if="isAdmin"
+            to="/admin/dashboard"
+            class="block w-full text-left"
+            @click="dropdownOpen=false"
+          >Admin</RouterLink>
           <button @click="logout" class="block w-full text-left">Logout</button>
         </div>
       </div>
     </header>
 
-    <ChatLayout v-if="view==='chat'" :logged-in="loggedIn" class="flex-1" />
-    <AdminLayout v-else class="flex-1" />
+    <router-view class="flex-1" />
 
     <div
       v-if="showLogin"
@@ -44,11 +48,9 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { fetchUsers, type User } from './api'
-import ChatLayout from './components/ChatLayout.vue'
 import Login from './components/Login.vue'
-import AdminLayout from './components/AdminLayout.vue'
+import { RouterLink } from 'vue-router'
 
-const view = ref('chat')
 const loggedIn = ref(false)
 const dropdownOpen = ref(false)
 const showLogin = ref(false)
