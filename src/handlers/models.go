@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"codex/src/llama"
+	"codex/src/memory"
 	"codex/src/models"
 	"encoding/json"
 	"fmt"
@@ -21,10 +22,25 @@ func ModelsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "pipeline required", http.StatusBadRequest)
 		return
 	}
-	list, err := models.ListModelsByType(pipeline)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	refresh := r.URL.Query().Get("refresh") == "1"
+	db, err := memory.InitDB()
+	if err == nil {
+		defer db.Close()
+	}
+
+	var list []models.ModelInfo
+	if db != nil && !refresh {
+		list, _ = memory.GetModelList(db, pipeline)
+	}
+	if len(list) == 0 || refresh {
+		list, err = models.ListModelsByType(pipeline)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if db != nil {
+			memory.SaveModelList(db, pipeline, list)
+		}
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(list)
@@ -41,10 +57,25 @@ func ModelActionHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		id := parts[0]
-		detail, err := models.GetModelDetail(id)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+		refresh := r.URL.Query().Get("refresh") == "1"
+		db, err := memory.InitDB()
+		if err == nil {
+			defer db.Close()
+		}
+
+		var detail *models.ModelDetail
+		if db != nil && !refresh {
+			detail, _ = memory.GetModelDetail(db, id)
+		}
+		if detail == nil || refresh {
+			detail, err = models.GetModelDetail(id)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			if db != nil {
+				memory.SaveModelDetail(db, "", detail)
+			}
 		}
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(detail)
@@ -128,4 +159,30 @@ func ModelActionHandler(w http.ResponseWriter, r *http.Request) {
 	default:
 		http.NotFound(w, r)
 	}
+}
+
+// RefreshModelsHandler re-fetches model listings from Hugging Face and updates
+// the local database cache. The pipeline parameter must be supplied via query
+// string and the handler responds with the latest list.
+func RefreshModelsHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	pipeline := r.URL.Query().Get("pipeline")
+	if pipeline == "" {
+		http.Error(w, "pipeline required", http.StatusBadRequest)
+		return
+	}
+	list, err := models.ListModelsByType(pipeline)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if db, err := memory.InitDB(); err == nil {
+		memory.SaveModelList(db, pipeline, list)
+		db.Close()
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(list)
 }
