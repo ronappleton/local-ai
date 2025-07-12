@@ -50,7 +50,7 @@ const code = ref('')
 const errors = ref<string[]>([])
 
 const emit = defineEmits<{
-  (e: 'success'): void
+  (e: 'success', user: any): void
   (e: 'register'): void
   (e: 'reset'): void
 }>()
@@ -72,7 +72,8 @@ async function submit() {
   if (res.status === 401) {
     errors.value.push('Login failed')
   } else if (res.ok) {
-    emit('success')
+    const user = await res.json()
+    emit('success', user)
   }
 }
 </script>

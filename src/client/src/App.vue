@@ -133,10 +133,13 @@ function switchToLogin() {
   openLogin()
 }
 
-function loginSuccess() {
+function loginSuccess(user: User) {
   closeLogin()
-  parseSession()
-  fetchUsername()
+  loggedIn.value = true
+  userId.value = user.id
+  username.value = user.username
+  isAdmin.value = user.admin === true || user.admin === 1
+  localStorage.setItem('codexUser', JSON.stringify(user))
 }
 
 function handleKey(e: KeyboardEvent) {
@@ -156,10 +159,18 @@ watch([showLogin, showRegister, showReset], ([l, r, s]) => {
 })
 
 function parseSession() {
-  const match = document.cookie.match(/session=(\d+)/)
-  if (match) {
+  const has = document.cookie.match(/(?:^|;)\s*session=/)
+  if (has) {
     loggedIn.value = true
-    userId.value = parseInt(match[1])
+    const stored = localStorage.getItem('codexUser')
+    if (stored) {
+      try {
+        const u: User = JSON.parse(stored)
+        userId.value = u.id
+        username.value = u.username
+        isAdmin.value = u.admin === true || u.admin === 1
+      } catch {}
+    }
   }
 }
 
@@ -177,6 +188,7 @@ async function fetchUsername() {
 
 function logout() {
   fetch('/api/logout', { method: 'POST' }).finally(() => {
+    localStorage.removeItem('codexUser')
     window.location.reload()
   })
 }
