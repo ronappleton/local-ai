@@ -34,11 +34,44 @@ func ModelsHandler(w http.ResponseWriter, r *http.Request) {
 // model. The action is taken from the URL path after the model ID.
 func ModelActionHandler(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/models/"), "/")
+	if len(parts) == 1 {
+		// GET /api/models/{id}
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		id := parts[0]
+		detail, err := models.GetModelDetail(id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(detail)
+		return
+	}
+
 	if len(parts) < 2 {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
 	id, action := parts[0], parts[1]
+
+	// Handle special case /api/models/stats/global
+	if id == "stats" && action == "global" {
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		stats, err := models.GetGlobalStats()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(stats)
+		return
+	}
 
 	switch action {
 	case "enable":
@@ -80,6 +113,18 @@ func ModelActionHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		fmt.Fprintf(w, "event: done\ndata: ok\n\n")
 		flusher.Flush()
+	case "stats":
+		if r.Method != http.MethodGet {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		stats, err := models.GetModelDetail(id)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(stats)
 	default:
 		http.NotFound(w, r)
 	}

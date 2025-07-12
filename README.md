@@ -65,6 +65,15 @@ variables `SMTP_ADDR` and `SMTP_FROM`.
 
 Run `codex [command] --help` for detailed flags.
 
+### Admin model management
+
+Logged in administrators can manage models from the web UI under
+`/admin/models`. The interface lists Hugging Face models for each pipeline
+category, supports searching by ID, and allows downloading or activating a
+model. Selecting a model displays detailed metadata including tags, SHA and file
+list retrieved from the Hugging Face API. A separate stats view shows the total
+number of models available across Hugging Face.
+
 ## Data location
 
 All conversation history and project metadata are kept in `memory.db` in the
