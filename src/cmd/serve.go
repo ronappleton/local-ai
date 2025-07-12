@@ -40,6 +40,7 @@ var serveCmd = &cobra.Command{
 		http.HandleFunc("/api/users", handlers2.WithAdmin(handlers2.UsersHandler))
 		http.HandleFunc("/api/models", handlers2.WithAdmin(handlers2.ModelsHandler))
 		http.HandleFunc("/api/models/", handlers2.WithAdmin(handlers2.ModelActionHandler))
+		http.HandleFunc("/api/models/refresh", handlers2.WithAdmin(handlers2.RefreshModelsHandler))
 		http.HandleFunc("/api/verify", handlers2.VerifyHandler)
 		http.HandleFunc("/api/reset/request", handlers2.ResetRequestHandler)
 		http.HandleFunc("/api/reset", handlers2.ResetPasswordHandler)

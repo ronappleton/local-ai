@@ -76,6 +76,18 @@ func InitDB() (*sql.DB, error) {
 		db.Close()
 		return nil, err
 	}
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS model_cache (
+               id TEXT PRIMARY KEY,
+               pipeline TEXT,
+               last_modified TEXT,
+               downloads INTEGER,
+               tags TEXT,
+               sha TEXT,
+               files TEXT
+       );`); err != nil {
+		db.Close()
+		return nil, err
+	}
 	return db, nil
 }
 

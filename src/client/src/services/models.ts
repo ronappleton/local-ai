@@ -54,6 +54,14 @@ export async function syncModels(): Promise<void> {
   if (!res.ok) throw new Error("Failed to sync models");
 }
 
+export async function refreshModels(pipeline: string): Promise<void> {
+  const res = await fetch(
+    `${BASE}/refresh?pipeline=${encodeURIComponent(pipeline)}`,
+    { method: "POST" },
+  );
+  if (!res.ok) throw new Error("Failed to refresh models");
+}
+
 export async function enableModel(id: string): Promise<void> {
   const res = await fetch(`${BASE}/${encodeURIComponent(id)}/enable`, {
     method: "POST",
