@@ -39,7 +39,7 @@
         >
           &times;
         </button>
-        <LoginForm @success="closeLogin" @register="openRegister" @reset="openReset" />
+        <LoginForm @success="loginSuccess" @register="openRegister" @reset="openReset" />
       </div>
     </div>
 
@@ -131,6 +131,12 @@ function openReset() {
 function switchToLogin() {
   closeRegister()
   openLogin()
+}
+
+function loginSuccess() {
+  closeLogin()
+  parseSession()
+  fetchUsername()
 }
 
 function handleKey(e: KeyboardEvent) {

@@ -73,7 +73,6 @@ async function submit() {
     errors.value.push('Login failed')
   } else if (res.ok) {
     emit('success')
-    window.location.reload()
   }
 }
 </script>
