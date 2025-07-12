@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -66,6 +67,11 @@ func ModelsHandler(w http.ResponseWriter, r *http.Request) {
 func ModelActionHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s", r.Method, r.URL.Path)
 	parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/api/models/"), "/")
+	if len(parts) > 0 {
+		if decoded, err := url.PathUnescape(parts[0]); err == nil {
+			parts[0] = decoded
+		}
+	}
 	if len(parts) == 1 {
 		// GET /api/models/{id}
 		if r.Method != http.MethodGet {
@@ -116,6 +122,9 @@ func ModelActionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id, action := parts[0], parts[1]
+	if decoded, err := url.PathUnescape(id); err == nil {
+		id = decoded
+	}
 
 	// Handle special case /api/models/stats/global
 	if id == "stats" && action == "global" {
