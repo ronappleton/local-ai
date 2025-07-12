@@ -259,3 +259,25 @@ func ConsumeToken(db *sql.DB, token, typ string) (int, error) {
 	}
 	return userID, nil
 }
+
+// DeleteUser removes a single user and any tokens associated with them.
+func DeleteUser(db *sql.DB, username string) error {
+	u, err := GetByUsername(db, username)
+	if err != nil {
+		return err
+	}
+	if _, err := db.Exec(`DELETE FROM users WHERE id=?`, u.ID); err != nil {
+		return err
+	}
+	_, err = db.Exec(`DELETE FROM tokens WHERE user_id=?`, u.ID)
+	return err
+}
+
+// DeleteAllUsers removes every account and clears related tokens.
+func DeleteAllUsers(db *sql.DB) error {
+	if _, err := db.Exec(`DELETE FROM users`); err != nil {
+		return err
+	}
+	_, err := db.Exec(`DELETE FROM tokens`)
+	return err
+}

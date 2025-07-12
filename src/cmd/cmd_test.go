@@ -121,3 +121,55 @@ func TestListUsersCommand(t *testing.T) {
 		t.Fatalf("unexpected list: %+v err:%v", users, err)
 	}
 }
+
+func TestDeleteUserCommand(t *testing.T) {
+	dir := t.TempDir()
+	cwd, _ := os.Getwd()
+	defer os.Chdir(cwd)
+	os.Chdir(dir)
+
+	// create users
+	createUserCmd.RunE(createUserCmd, []string{"john", "j@c.com", "pwd"})
+	createUserCmd.RunE(createUserCmd, []string{"kate", "k@c.com", "pwd"})
+
+	if err := deleteUserCmd.RunE(deleteUserCmd, []string{"john"}); err != nil {
+		t.Fatalf("delete error: %v", err)
+	}
+
+	db, err := memory.InitDB()
+	if err != nil {
+		t.Fatalf("InitDB error: %v", err)
+	}
+	defer db.Close()
+	users, _ := auth.List(db)
+	if len(users) != 1 || users[0].Username != "kate" {
+		t.Fatalf("unexpected users: %+v", users)
+	}
+}
+
+func TestDeleteAllUsersCommand(t *testing.T) {
+	dir := t.TempDir()
+	cwd, _ := os.Getwd()
+	defer os.Chdir(cwd)
+	os.Chdir(dir)
+
+	createUserCmd.RunE(createUserCmd, []string{"john", "j@c.com", "pwd"})
+	createUserCmd.RunE(createUserCmd, []string{"kate", "k@c.com", "pwd"})
+
+	deleteUserCmd.Flags().Set("all", "true")
+	err := deleteUserCmd.RunE(deleteUserCmd, []string{})
+	deleteUserCmd.Flags().Set("all", "false")
+	if err != nil {
+		t.Fatalf("delete all error: %v", err)
+	}
+
+	db, err := memory.InitDB()
+	if err != nil {
+		t.Fatalf("InitDB error: %v", err)
+	}
+	defer db.Close()
+	users, _ := auth.List(db)
+	if len(users) != 0 {
+		t.Fatalf("users not removed: %+v", users)
+	}
+}
