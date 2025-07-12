@@ -10,6 +10,7 @@ package llama
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 )
@@ -59,4 +60,21 @@ func SendPrompt(prompt string) (string, error) {
 	json.Unmarshal(resBody, &respData)
 
 	return respData.Content, nil
+}
+
+// LoadModel instructs the llama.cpp server to load the model at the provided
+// path. This relies on the `/props` endpoint which reloads the active model when
+// the `model` property is set.
+func LoadModel(path string) error {
+	body, _ := json.Marshal(map[string]string{"model": path})
+	resp, err := http.Post("http://localhost:8080/props", "application/json", bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return errors.New(string(b))
+	}
+	return nil
 }
