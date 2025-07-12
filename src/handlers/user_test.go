@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -24,7 +25,7 @@ func TestRegisterAndLogin(t *testing.T) {
 	defer cleanup()
 
 	// register
-	body := bytes.NewBufferString(`{"Email":"alice","Email":"a@b.com","Password":"secret"}`)
+	body := bytes.NewBufferString(`{"Username":"alice","Email":"a@b.com","Password":"secret"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/register", body)
 	w := httptest.NewRecorder()
 	RegisterHandler(w, req)
@@ -37,11 +38,35 @@ func TestRegisterAndLogin(t *testing.T) {
 	auth.MarkVerified(db, 1)
 	db.Close()
 
-	body = bytes.NewBufferString(`{"Email":"alice","Password":"secret"}`)
+	body = bytes.NewBufferString(`{"Email":"a@b.com","Password":"secret"}`)
 	req = httptest.NewRequest(http.MethodPost, "/api/login", body)
 	w = httptest.NewRecorder()
 	LoginHandler(w, req)
-	if w.Result().StatusCode != http.StatusOK {
-		t.Fatalf("login failed: %d", w.Result().StatusCode)
+	res := w.Result()
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("login failed: %d", res.StatusCode)
+	}
+	found := false
+	for _, c := range res.Cookies() {
+		if c.Name == "session" && c.Value != "" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("session cookie not set")
+	}
+	var u struct {
+		ID       int    `json:"id"`
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		Verified bool   `json:"verified"`
+		Admin    bool   `json:"admin"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&u); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if u.Username != "alice" || u.Email != "a@b.com" || !u.Verified {
+		t.Fatalf("unexpected user response: %+v", u)
 	}
 }

@@ -76,14 +76,26 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// 👇 Fix: ensure Content-Type is set
 	w.Header().Set("Content-Type", "application/json")
 
-	data, err := json.Marshal(u)
-	if err != nil {
-		http.Error(w, "server error", http.StatusInternalServerError)
-		log.Printf("LoginHandler: failed to marshal user: %v", err)
-		return
+	type userResp struct {
+		ID       int    `json:"id"`
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		Verified bool   `json:"verified"`
+		Admin    bool   `json:"admin"`
 	}
+
+	resp := userResp{
+		ID:       u.ID,
+		Username: u.Username,
+		Email:    u.Email,
+		Verified: u.Verified,
+		Admin:    u.Admin,
+	}
+
 	w.WriteHeader(http.StatusOK)
-	w.Write(data)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		log.Printf("LoginHandler: failed to write response: %v", err)
+	}
 }
 
 // LogoutHandler clears the session cookie.
