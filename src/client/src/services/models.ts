@@ -53,3 +53,9 @@ export async function syncModels(): Promise<void> {
   const res = await fetch(`${BASE}/sync`, { method: 'POST' })
   if (!res.ok) throw new Error('Failed to sync models')
 }
+
+export async function enableModel(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/${encodeURIComponent(id)}/enable`, { method: 'POST' })
+  if (!res.ok) throw new Error('Failed to enable model')
+}
+

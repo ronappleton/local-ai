@@ -22,8 +22,9 @@
     </div>
     <div v-if="loading" class="py-2">Loading...</div>
     <ul v-else class="space-y-1 text-sm">
-      <li v-for="m in filteredModels" :key="m.modelId" class="truncate">
+      <li v-for="m in filteredModels" :key="m.modelId" class="truncate flex items-center space-x-2">
         <ModelCard>{{ m.modelId }}</ModelCard>
+        <button @click="enable(m.modelId)" class="text-xs text-blue-400 hover:underline">Enable</button>
       </li>
     </ul>
   </div>
@@ -32,7 +33,7 @@
 <script setup lang="ts">
 // View for listing all models. Formerly `ManageModels.vue`.
 import { ref, computed } from 'vue'
-import { getAllModels, type Model } from '../../services/models'
+import { getAllModels, enableModel, type Model } from '../../services/models'
 import ModelCard from '../../components/model/ModelCard.vue'
 
 const pipelines = [
@@ -68,6 +69,15 @@ async function load() {
 function select(p: string) {
   selected.value = p;
   load();
+}
+
+async function enable(id: string) {
+  try {
+    await enableModel(id)
+    alert('Model enabled')
+  } catch {
+    alert('Failed to enable model')
+  }
 }
 
 function tabClass(p: string) {

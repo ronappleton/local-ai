@@ -172,3 +172,39 @@ func downloadFile(path, url string) error {
 	_, err = io.Copy(f, resp.Body)
 	return err
 }
+
+// EnableModel ensures the specified model is downloaded and marked as active.
+// It returns the local filesystem path to the model directory. The llama
+// server can then be instructed to reload using this path.
+func EnableModel(id string) (string, error) {
+	state, err := LoadState()
+	if err != nil {
+		return "", err
+	}
+
+	lm, ok := state.Models[id]
+	if !ok {
+		sha, err := DownloadModel(id)
+		if err != nil {
+			return "", err
+		}
+		lm = &LocalModel{
+			ID:         id,
+			Path:       filepath.Join("models", id),
+			Version:    sha,
+			Downloaded: time.Now(),
+		}
+		state.Models[id] = lm
+	}
+
+	for _, m := range state.Models {
+		m.Active = false
+	}
+	lm.Active = true
+	state.Active = id
+
+	if err := SaveState(state); err != nil {
+		return "", err
+	}
+	return lm.Path, nil
+}
