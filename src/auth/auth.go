@@ -211,8 +211,8 @@ func List(db *sql.DB) ([]User, error) {
 	return res, nil
 }
 
-// Authenticate attempts to retrieve the user by username and verify credentials and optional TOTP.
-func Authenticate(db *sql.DB, username, password, code string) (*User, error) {
+// Authenticate attempts to retrieve the user by username and verify credentials.
+func Authenticate(db *sql.DB, username, password string) (*User, error) {
 	u, err := GetByUsername(db, username)
 	if err != nil {
 		return nil, err
@@ -222,9 +222,6 @@ func Authenticate(db *sql.DB, username, password, code string) (*User, error) {
 	}
 	if err := VerifyPassword(u, password); err != nil {
 		return nil, err
-	}
-	if u.TOTPSecret != "" && !VerifyTOTP(u.TOTPSecret, code) {
-		return nil, errors.New("invalid totp")
 	}
 	return u, nil
 }
