@@ -120,6 +120,14 @@ func ListModelsByType(pipeline string) ([]ModelInfo, error) {
 // the models directory.  It returns the model's SHA hash reported by the API so
 // callers can track versions.
 func DownloadModel(id string) (string, error) {
+	return DownloadModelWithProgress(id, nil)
+}
+
+// DownloadModelWithProgress fetches all files for the given model ID while
+// reporting incremental progress. The progress callback receives the number of
+// files downloaded so far and the total count. It mirrors DownloadModel when no
+// callback is provided.
+func DownloadModelWithProgress(id string, progress func(done, total int)) (string, error) {
 	infoURL := "https://huggingface.co/api/models/" + id
 	resp, err := http.Get(infoURL)
 	if err != nil {
@@ -143,10 +151,14 @@ func DownloadModel(id string) (string, error) {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return "", err
 	}
-	for _, sbl := range data.Siblings {
+	total := len(data.Siblings)
+	for i, sbl := range data.Siblings {
 		fileURL := "https://huggingface.co/" + id + "/resolve/main/" + sbl.Rfilename
 		if err := downloadFile(filepath.Join(dir, filepath.Base(sbl.Rfilename)), fileURL); err != nil {
 			return "", err
+		}
+		if progress != nil {
+			progress(i+1, total)
 		}
 	}
 	return data.Sha, nil
@@ -173,10 +185,10 @@ func downloadFile(path, url string) error {
 	return err
 }
 
-// EnableModel ensures the specified model is downloaded and marked as active.
-// It returns the local filesystem path to the model directory. The llama
-// server can then be instructed to reload using this path.
-func EnableModel(id string) (string, error) {
+// ActivateModel marks a previously downloaded model as the active one without
+// performing any download step. It returns the local path to the model
+// directory so the server can reload it.
+func ActivateModel(id string) (string, error) {
 	state, err := LoadState()
 	if err != nil {
 		return "", err
@@ -184,17 +196,7 @@ func EnableModel(id string) (string, error) {
 
 	lm, ok := state.Models[id]
 	if !ok {
-		sha, err := DownloadModel(id)
-		if err != nil {
-			return "", err
-		}
-		lm = &LocalModel{
-			ID:         id,
-			Path:       filepath.Join("models", id),
-			Version:    sha,
-			Downloaded: time.Now(),
-		}
-		state.Models[id] = lm
+		return "", errors.New("model not downloaded")
 	}
 
 	for _, m := range state.Models {
