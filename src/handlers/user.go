@@ -46,7 +46,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	var req struct{ Username, Password, TOTP string }
+	var req struct{ Username, Password string }
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid", http.StatusBadRequest)
 		return
@@ -57,7 +57,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer db.Close()
-	u, err := auth.Authenticate(db, req.Username, req.Password, req.TOTP)
+	u, err := auth.Authenticate(db, req.Username, req.Password)
 	if err != nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
