@@ -6,7 +6,7 @@
         <RouterLink v-if="loggedIn && isAdmin" to="/admin/dashboard">Admin</RouterLink>
       </nav>
       <div class="relative">
-        <button v-if="!loggedIn" @click="showLogin = true">Login</button>
+        <button v-if="!loggedIn" @click="openLogin">Login</button>
         <div v-else class="cursor-pointer" @click="dropdownOpen = !dropdownOpen">
           {{ username }}
         </div>
@@ -31,7 +31,7 @@
       aria-modal="true"
       @click.self="closeLogin"
     >
-      <div class="relative bg-gray-800 text-gray-200 p-6 rounded-lg shadow-lg w-full max-w-md" aria-labelledby="auth-title">
+      <div class="relative bg-gray-800 text-gray-200 p-6 rounded-lg shadow-lg w-full max-w-md" aria-labelledby="login-title">
         <button
           class="absolute top-2 right-2 text-gray-400 hover:text-white"
           @click="closeLogin"
@@ -39,7 +39,45 @@
         >
           &times;
         </button>
-        <Login @success="closeLogin" />
+        <LoginForm @success="closeLogin" @register="openRegister" @reset="openReset" />
+      </div>
+    </div>
+
+    <div
+      v-if="showRegister"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      role="dialog"
+      aria-modal="true"
+      @click.self="closeRegister"
+    >
+      <div class="relative bg-gray-800 text-gray-200 p-6 rounded-lg shadow-lg w-full max-w-md" aria-labelledby="register-title">
+        <button
+          class="absolute top-2 right-2 text-gray-400 hover:text-white"
+          @click="closeRegister"
+          aria-label="Close register modal"
+        >
+          &times;
+        </button>
+        <RegisterForm @success="switchToLogin" @login="openLogin" />
+      </div>
+    </div>
+
+    <div
+      v-if="showReset"
+      class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+      role="dialog"
+      aria-modal="true"
+      @click.self="closeReset"
+    >
+      <div class="relative bg-gray-800 text-gray-200 p-6 rounded-lg shadow-lg w-full max-w-md" aria-labelledby="reset-title">
+        <button
+          class="absolute top-2 right-2 text-gray-400 hover:text-white"
+          @click="closeReset"
+          aria-label="Close reset modal"
+        >
+          &times;
+        </button>
+        <ResetRequestForm @login="openLogin" />
       </div>
     </div>
   </div>
@@ -48,12 +86,16 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { fetchUsers, type User } from './api'
-import Login from './components/Login.vue'
+import LoginForm from './components/LoginForm.vue'
+import RegisterForm from './components/RegisterForm.vue'
+import ResetRequestForm from './components/ResetRequestForm.vue'
 import { RouterLink } from 'vue-router'
 
 const loggedIn = ref(false)
 const dropdownOpen = ref(false)
 const showLogin = ref(false)
+const showRegister = ref(false)
+const showReset = ref(false)
 const username = ref('')
 const userId = ref<number | null>(null)
 const isAdmin = ref(false)
@@ -62,14 +104,45 @@ function closeLogin() {
   showLogin.value = false
 }
 
+function openLogin() {
+  showRegister.value = false
+  showReset.value = false
+  showLogin.value = true
+}
+
+function closeRegister() {
+  showRegister.value = false
+}
+
+function openRegister() {
+  showLogin.value = false
+  showRegister.value = true
+}
+
+function closeReset() {
+  showReset.value = false
+}
+
+function openReset() {
+  showLogin.value = false
+  showReset.value = true
+}
+
+function switchToLogin() {
+  closeRegister()
+  openLogin()
+}
+
 function handleKey(e: KeyboardEvent) {
   if (e.key === 'Escape') {
-    closeLogin()
+    if (showLogin.value) closeLogin()
+    if (showRegister.value) closeRegister()
+    if (showReset.value) closeReset()
   }
 }
 
-watch(showLogin, (val) => {
-  if (val) {
+watch([showLogin, showRegister, showReset], ([l, r, s]) => {
+  if (l || r || s) {
     window.addEventListener('keydown', handleKey)
   } else {
     window.removeEventListener('keydown', handleKey)
