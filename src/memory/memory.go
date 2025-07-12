@@ -83,11 +83,36 @@ func InitDB() (*sql.DB, error) {
                downloads INTEGER,
                tags TEXT,
                sha TEXT,
-               files TEXT
+               files TEXT,
+               llama_compatible INTEGER DEFAULT 0,
+               model_type TEXT,
+               hidden_size INTEGER,
+               n_layer INTEGER,
+               num_attention_heads INTEGER,
+               quantized INTEGER DEFAULT 0,
+               gguf INTEGER DEFAULT 0,
+               safetensors INTEGER DEFAULT 0,
+               compatible_backends TEXT,
+               license TEXT,
+               model_card TEXT,
+               download_size INTEGER
        );`); err != nil {
 		db.Close()
 		return nil, err
 	}
+	// attempt to add columns for new metadata if the table existed without them
+	db.Exec(`ALTER TABLE model_cache ADD COLUMN llama_compatible INTEGER DEFAULT 0`)
+	db.Exec(`ALTER TABLE model_cache ADD COLUMN model_type TEXT`)
+	db.Exec(`ALTER TABLE model_cache ADD COLUMN hidden_size INTEGER`)
+	db.Exec(`ALTER TABLE model_cache ADD COLUMN n_layer INTEGER`)
+	db.Exec(`ALTER TABLE model_cache ADD COLUMN num_attention_heads INTEGER`)
+	db.Exec(`ALTER TABLE model_cache ADD COLUMN quantized INTEGER DEFAULT 0`)
+	db.Exec(`ALTER TABLE model_cache ADD COLUMN gguf INTEGER DEFAULT 0`)
+	db.Exec(`ALTER TABLE model_cache ADD COLUMN safetensors INTEGER DEFAULT 0`)
+	db.Exec(`ALTER TABLE model_cache ADD COLUMN compatible_backends TEXT`)
+	db.Exec(`ALTER TABLE model_cache ADD COLUMN license TEXT`)
+	db.Exec(`ALTER TABLE model_cache ADD COLUMN model_card TEXT`)
+	db.Exec(`ALTER TABLE model_cache ADD COLUMN download_size INTEGER`)
 	return db, nil
 }
 
