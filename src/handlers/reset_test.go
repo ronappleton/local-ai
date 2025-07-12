@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -54,11 +55,35 @@ func TestPasswordResetFlow(t *testing.T) {
 		t.Fatalf("reset password failed: %d", w.Result().StatusCode)
 	}
 
-	reqBody = bytes.NewBufferString(`{"Email":"alice","Password":"newpwd"}`)
+	reqBody = bytes.NewBufferString(`{"Email":"a@b.com","Password":"newpwd"}`)
 	req = httptest.NewRequest(http.MethodPost, "/api/login", reqBody)
 	w = httptest.NewRecorder()
 	LoginHandler(w, req)
-	if w.Result().StatusCode != http.StatusOK {
-		t.Fatalf("login with new password failed: %d", w.Result().StatusCode)
+	res := w.Result()
+	if res.StatusCode != http.StatusOK {
+		t.Fatalf("login with new password failed: %d", res.StatusCode)
+	}
+	found := false
+	for _, c := range res.Cookies() {
+		if c.Name == "session" && c.Value != "" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("session cookie not set")
+	}
+	var u struct {
+		ID       int    `json:"id"`
+		Username string `json:"username"`
+		Email    string `json:"email"`
+		Verified bool   `json:"verified"`
+		Admin    bool   `json:"admin"`
+	}
+	if err := json.NewDecoder(res.Body).Decode(&u); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if u.Email != "a@b.com" || !u.Verified {
+		t.Fatalf("unexpected user response: %+v", u)
 	}
 }
