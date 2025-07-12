@@ -12,9 +12,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       input: {
-        main: resolve(__dirname, 'index.html'),
-        reset: resolve(__dirname, 'reset/index.html'),
-        request: resolve(__dirname, 'reset/request/index.html')
+        main: resolve(__dirname, 'index.html')
       }
     }
   }
