@@ -9,6 +9,7 @@ import (
 	"codex/src/auth"
 	"codex/src/memory"
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -44,26 +45,31 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		log.Printf("LoginHandler: method not allowed")
 		return
 	}
-	var req struct{ Username, Password string }
+	var req struct{ Email, Password string }
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid", http.StatusBadRequest)
+		log.Printf("LoginHandler: invalid request body: %v", err)
 		return
 	}
 	db, err := memory.InitDB()
 	if err != nil {
 		http.Error(w, "db error", http.StatusInternalServerError)
+		log.Printf("LoginHandler: db error: %v", err)
 		return
 	}
 	defer db.Close()
-	u, err := auth.Authenticate(db, req.Username, req.Password)
+	u, err := auth.Authenticate(db, req.Email, req.Password)
 	if err != nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		log.Printf("LoginHandler: authentication failed for %s: %v", req.Email, err)
 		return
 	}
 	if err := setSessionCookie(w, u.ID); err != nil {
 		http.Error(w, "server error", http.StatusInternalServerError)
+		log.Printf("LoginHandler: failed to set session cookie: %v", err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

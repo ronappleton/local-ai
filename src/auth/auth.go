@@ -212,8 +212,8 @@ func List(db *sql.DB) ([]User, error) {
 }
 
 // Authenticate attempts to retrieve the user by username and verify credentials.
-func Authenticate(db *sql.DB, username, password string) (*User, error) {
-	u, err := GetByUsername(db, username)
+func Authenticate(db *sql.DB, email, password string) (*User, error) {
+	u, err := GetByEmail(db, email)
 	if err != nil {
 		return nil, err
 	}

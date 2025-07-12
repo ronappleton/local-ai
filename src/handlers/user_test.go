@@ -24,7 +24,7 @@ func TestRegisterAndLogin(t *testing.T) {
 	defer cleanup()
 
 	// register
-	body := bytes.NewBufferString(`{"Username":"alice","Email":"a@b.com","Password":"secret"}`)
+	body := bytes.NewBufferString(`{"Email":"alice","Email":"a@b.com","Password":"secret"}`)
 	req := httptest.NewRequest(http.MethodPost, "/api/register", body)
 	w := httptest.NewRecorder()
 	RegisterHandler(w, req)
@@ -37,7 +37,7 @@ func TestRegisterAndLogin(t *testing.T) {
 	auth.MarkVerified(db, 1)
 	db.Close()
 
-	body = bytes.NewBufferString(`{"Username":"alice","Password":"secret"}`)
+	body = bytes.NewBufferString(`{"Email":"alice","Password":"secret"}`)
 	req = httptest.NewRequest(http.MethodPost, "/api/login", body)
 	w = httptest.NewRecorder()
 	LoginHandler(w, req)

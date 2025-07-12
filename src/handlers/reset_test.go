@@ -54,7 +54,7 @@ func TestPasswordResetFlow(t *testing.T) {
 		t.Fatalf("reset password failed: %d", w.Result().StatusCode)
 	}
 
-	reqBody = bytes.NewBufferString(`{"Username":"alice","Password":"newpwd"}`)
+	reqBody = bytes.NewBufferString(`{"Email":"alice","Password":"newpwd"}`)
 	req = httptest.NewRequest(http.MethodPost, "/api/login", reqBody)
 	w = httptest.NewRecorder()
 	LoginHandler(w, req)
