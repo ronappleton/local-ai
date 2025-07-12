@@ -6,6 +6,7 @@ package handlers
 import (
 	"codex/src/memory"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strings"
 )
@@ -26,9 +27,11 @@ type ProjectsResponse struct {
 // for persistence. Extension Point: additional methods such as PUT could be
 // added here to extend project metadata management.
 func ProjectsHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("%s %s", r.Method, r.URL.Path)
 	db, err := memory.InitDB()
 	if err != nil {
 		http.Error(w, "db error", http.StatusInternalServerError)
+		log.Printf("ProjectsHandler InitDB error: %v", err)
 		return
 	}
 	defer db.Close()
@@ -41,25 +44,33 @@ func ProjectsHandler(w http.ResponseWriter, r *http.Request) {
 		list, err := memory.ListProjects(db)
 		if err != nil {
 			http.Error(w, "db error", http.StatusInternalServerError)
+			log.Printf("ProjectsHandler ListProjects error: %v", err)
 			return
 		}
 		active, _ := memory.GetActiveProject(db)
-		json.NewEncoder(w).Encode(ProjectsResponse{Projects: list, Active: active})
+		resp := ProjectsResponse{Projects: list, Active: active}
+		log.Printf("ProjectsHandler response %+v", resp)
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			log.Printf("ProjectsHandler encode error: %v", err)
+		}
 	case http.MethodPost:
 		var req struct {
 			Name string `json:"name"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
+			log.Printf("ProjectsHandler decode error: %v", err)
 			http.Error(w, "invalid", http.StatusBadRequest)
 			return
 		}
 		if err := memory.AddProject(db, req.Name); err != nil {
 			http.Error(w, "db error", http.StatusInternalServerError)
+			log.Printf("ProjectsHandler AddProject error: %v", err)
 			return
 		}
 		w.WriteHeader(http.StatusCreated)
 	default:
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		log.Printf("ProjectsHandler method not allowed: %s", r.Method)
 	}
 }
 
@@ -68,14 +79,17 @@ func ProjectsHandler(w http.ResponseWriter, r *http.Request) {
 // Awareness: by switching project, the assistant focuses memory queries on a
 // different conversation context.
 func SwitchProjectHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("%s %s", r.Method, r.URL.Path)
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		log.Printf("SwitchProjectHandler method not allowed")
 		return
 	}
 	// Use the shared memory database to update the active project setting.
 	db, err := memory.InitDB()
 	if err != nil {
 		http.Error(w, "db error", http.StatusInternalServerError)
+		log.Printf("SwitchProjectHandler InitDB error: %v", err)
 		return
 	}
 	defer db.Close()
@@ -83,11 +97,13 @@ func SwitchProjectHandler(w http.ResponseWriter, r *http.Request) {
 		Name string `json:"name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Name == "" {
+		log.Printf("SwitchProjectHandler decode error: %v", err)
 		http.Error(w, "invalid", http.StatusBadRequest)
 		return
 	}
 	if err := memory.SetActiveProject(db, req.Name); err != nil {
 		http.Error(w, "db error", http.StatusInternalServerError)
+		log.Printf("SwitchProjectHandler SetActiveProject error: %v", err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -98,8 +114,10 @@ func SwitchProjectHandler(w http.ResponseWriter, r *http.Request) {
 // primarily used by the CLI and HTTP API when the user wants to discard a
 // conversation history.
 func DeleteProjectHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("%s %s", r.Method, r.URL.Path)
 	if r.Method != http.MethodDelete {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		log.Printf("DeleteProjectHandler method not allowed")
 		return
 	}
 	// Extract the project name from the URL path. Requests are routed with
@@ -114,11 +132,13 @@ func DeleteProjectHandler(w http.ResponseWriter, r *http.Request) {
 	db, err := memory.InitDB()
 	if err != nil {
 		http.Error(w, "db error", http.StatusInternalServerError)
+		log.Printf("DeleteProjectHandler InitDB error: %v", err)
 		return
 	}
 	defer db.Close()
 	if err := memory.DeleteProject(db, name); err != nil {
 		http.Error(w, "db error", http.StatusInternalServerError)
+		log.Printf("DeleteProjectHandler DeleteProject error: %v", err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -128,13 +148,16 @@ func DeleteProjectHandler(w http.ResponseWriter, r *http.Request) {
 // the active project setting so the assistant remains consistent across the
 // database.
 func RenameProjectHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("%s %s", r.Method, r.URL.Path)
 	if r.Method != http.MethodPost {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		log.Printf("RenameProjectHandler method not allowed")
 		return
 	}
 	db, err := memory.InitDB()
 	if err != nil {
 		http.Error(w, "db error", http.StatusInternalServerError)
+		log.Printf("RenameProjectHandler InitDB error: %v", err)
 		return
 	}
 	defer db.Close()
@@ -143,11 +166,13 @@ func RenameProjectHandler(w http.ResponseWriter, r *http.Request) {
 		New string `json:"new"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Old == "" || req.New == "" {
+		log.Printf("RenameProjectHandler decode error: %v", err)
 		http.Error(w, "invalid", http.StatusBadRequest)
 		return
 	}
 	if err := memory.RenameProject(db, req.Old, req.New); err != nil {
 		http.Error(w, "db error", http.StatusInternalServerError)
+		log.Printf("RenameProjectHandler RenameProject error: %v", err)
 		return
 	}
 	w.WriteHeader(http.StatusOK)

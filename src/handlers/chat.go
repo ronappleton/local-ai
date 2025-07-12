@@ -13,6 +13,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -64,8 +65,10 @@ func ensureAnonCookie(w http.ResponseWriter, r *http.Request) string {
 // clients and the underlying LLM. Additional preprocessing or postprocessing
 // logic can be inserted here.
 func ChatHandler(w http.ResponseWriter, r *http.Request) {
+	log.Printf("%s %s", r.Method, r.URL.Path)
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST allowed", http.StatusMethodNotAllowed)
+		log.Printf("ChatHandler method not allowed: %s", r.Method)
 		return
 	}
 
@@ -74,21 +77,27 @@ func ChatHandler(w http.ResponseWriter, r *http.Request) {
 
 	var req ChatRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("ChatHandler decode error: %v", err)
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
+	log.Printf("ChatHandler prompt=%q", req.Prompt)
 
 	// Forward the prompt to the LLM backend. The llama package abstracts
 	// the HTTP communication.
 	result, err := llama.SendPrompt(req.Prompt)
 	if err != nil {
+		log.Printf("ChatHandler llama error: %v", err)
 		http.Error(w, "LLM error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	res := ChatResponse{Response: result}
+	log.Printf("ChatHandler response %+v", res)
 	w.Header().Set("Content-Type", "application/json")
 	// Respond with the generated text. Additional metadata could be added
 	// here if needed in the future.
-	json.NewEncoder(w).Encode(res)
+	if err := json.NewEncoder(w).Encode(res); err != nil {
+		log.Printf("ChatHandler encode error: %v", err)
+	}
 }

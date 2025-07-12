@@ -33,8 +33,11 @@ const model = ref<ModelDetail | null>(null);
 async function load() {
   loading.value = true;
   try {
+    console.log("[ModelDetail] modelId:", route.params.id);
     model.value = await getModelById(route.params.id as string);
-  } catch {
+    console.log("[ModelDetail] response data:", model.value);
+  } catch (err) {
+    console.error("[ModelDetail] load error", err);
     model.value = null;
   } finally {
     loading.value = false;

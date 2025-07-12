@@ -12,20 +12,20 @@
         </button>
       </nav>
     </div>
-  <div class="my-2">
-    <input
-      v-model="search"
-      type="text"
-      placeholder="Search models"
-      class="w-full p-1 rounded bg-gray-800 border border-gray-700 text-sm"
-    />
-    <button
-      @click="refresh"
-      class="ml-2 text-sm text-blue-400 hover:underline"
-    >
-      Refresh
-    </button>
-  </div>
+    <div class="my-2">
+      <input
+        v-model="search"
+        type="text"
+        placeholder="Search models"
+        class="w-full p-1 rounded bg-gray-800 border border-gray-700 text-sm"
+      />
+      <button
+        @click="refresh"
+        class="ml-2 text-sm text-blue-400 hover:underline"
+      >
+        Refresh
+      </button>
+    </div>
     <div v-if="loading" class="py-2">Loading...</div>
     <table v-else class="text-sm w-full border-collapse">
       <thead>
@@ -111,8 +111,11 @@ const filteredModels = computed(() => {
 async function load() {
   loading.value = true;
   try {
+    console.log("[ModelList] load pipeline", selected.value);
     models.value = await getAllModels(selected.value);
-  } catch {
+    console.log("[ModelList] loaded", models.value.length, "models");
+  } catch (err) {
+    console.error("[ModelList] load error", err);
     models.value = [];
   } finally {
     loading.value = false;
@@ -124,6 +127,7 @@ async function refresh() {
   try {
     await refreshModels(selected.value);
     models.value = await getAllModels(selected.value);
+    console.log("[ModelList] refreshed", models.value.length, "models");
   } finally {
     loading.value = false;
   }
@@ -131,11 +135,13 @@ async function refresh() {
 
 function select(p: string) {
   selected.value = p;
+  console.log("[ModelList] select", p);
   load();
 }
 
 async function enable(id: string) {
   try {
+    console.log("[ModelList] enable", id);
     await enableModel(id);
     alert("Model enabled");
   } catch {
@@ -148,6 +154,7 @@ async function startDownload(id: string) {
   try {
     await downloadModel(id, (pct) => (progress.value[id] = pct));
     progress.value[id] = 100;
+    console.log("[ModelList] download complete", id);
   } catch {
     progress.value[id] = -1;
     alert("Download failed");
