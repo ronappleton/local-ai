@@ -18,26 +18,28 @@
         autocomplete="username"
       />
     </div>
-    <div v-if="mode === 'register'">
+    <div v-if="mode === 'register'" class="flex items-center bg-gray-700 border border-gray-600 rounded">
+      <span class="material-icons px-2 text-gray-400" aria-hidden="true">email</span>
       <label for="email" class="sr-only">Email</label>
       <input
         id="email"
         v-model="email"
         type="email"
         placeholder="Email"
-        class="w-full p-2 rounded bg-gray-700 border border-gray-600 placeholder-gray-400 text-gray-200"
+        class="flex-1 p-2 bg-transparent placeholder-gray-400 text-gray-200"
         required
         autocomplete="email"
       />
     </div>
-    <div>
+    <div class="flex items-center bg-gray-700 border border-gray-600 rounded">
+      <span class="material-icons px-2 text-gray-400" aria-hidden="true">vpn_key</span>
       <label for="password" class="sr-only">Password</label>
       <input
         id="password"
         v-model="password"
         type="password"
         placeholder="Password"
-        class="w-full p-2 rounded bg-gray-700 border border-gray-600 placeholder-gray-400 text-gray-200"
+        class="flex-1 p-2 bg-transparent placeholder-gray-400 text-gray-200"
         required
         autocomplete="current-password"
       />
