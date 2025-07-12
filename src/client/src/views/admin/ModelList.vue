@@ -12,14 +12,20 @@
         </button>
       </nav>
     </div>
-    <div class="my-2">
-      <input
-        v-model="search"
-        type="text"
-        placeholder="Search models"
-        class="w-full p-1 rounded bg-gray-800 border border-gray-700 text-sm"
-      />
-    </div>
+  <div class="my-2">
+    <input
+      v-model="search"
+      type="text"
+      placeholder="Search models"
+      class="w-full p-1 rounded bg-gray-800 border border-gray-700 text-sm"
+    />
+    <button
+      @click="refresh"
+      class="ml-2 text-sm text-blue-400 hover:underline"
+    >
+      Refresh
+    </button>
+  </div>
     <div v-if="loading" class="py-2">Loading...</div>
     <table v-else class="text-sm w-full border-collapse">
       <thead>
@@ -77,6 +83,7 @@ import {
   getAllModels,
   enableModel,
   downloadModel,
+  refreshModels,
   type Model,
 } from "../../services/models";
 import ModelCard from "../../components/model/ModelCard.vue";
@@ -107,6 +114,16 @@ async function load() {
     models.value = await getAllModels(selected.value);
   } catch {
     models.value = [];
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function refresh() {
+  loading.value = true;
+  try {
+    await refreshModels(selected.value);
+    models.value = await getAllModels(selected.value);
   } finally {
     loading.value = false;
   }
