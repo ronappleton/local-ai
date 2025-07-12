@@ -15,15 +15,17 @@
     <div v-if="loading" class="py-2">Loading...</div>
     <ul v-else class="space-y-1 text-sm">
       <li v-for="m in models" :key="m.modelId" class="truncate">
-        {{ m.modelId }}
+        <ModelCard>{{ m.modelId }}</ModelCard>
       </li>
     </ul>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
-import { fetchModels, type ModelInfo } from "../api";
+// View for listing all models. Formerly `ManageModels.vue`.
+import { ref } from 'vue'
+import { getAllModels, type Model } from '../../services/models'
+import ModelCard from '../../components/model/ModelCard.vue'
 
 const pipelines = [
   "text-generation",
@@ -34,17 +36,17 @@ const pipelines = [
 ];
 
 const selected = ref(pipelines[0]);
-const models = ref<ModelInfo[]>([]);
+const models = ref<Model[]>([])
 const loading = ref(false);
 
 async function load() {
-  loading.value = true;
+  loading.value = true
   try {
-    models.value = await fetchModels(selected.value);
+    models.value = await getAllModels(selected.value)
   } catch {
-    models.value = [];
+    models.value = []
   } finally {
-    loading.value = false;
+    loading.value = false
   }
 }
 
