@@ -72,7 +72,18 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("LoginHandler: failed to set session cookie: %v", err)
 		return
 	}
+
+	// 👇 Fix: ensure Content-Type is set
+	w.Header().Set("Content-Type", "application/json")
+
+	data, err := json.Marshal(u)
+	if err != nil {
+		http.Error(w, "server error", http.StatusInternalServerError)
+		log.Printf("LoginHandler: failed to marshal user: %v", err)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
+	w.Write(data)
 }
 
 // LogoutHandler clears the session cookie.
