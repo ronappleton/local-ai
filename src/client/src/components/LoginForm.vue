@@ -1,15 +1,17 @@
 <template>
   <form @submit.prevent="submit" class="space-y-4 max-w-md mx-auto" novalidate>
     <h2 id="login-title" class="text-xl font-semibold text-center">Login</h2>
-    <div>
-      <label for="login-username" class="sr-only">Username</label>
+    <div class="flex items-center bg-gray-700 border border-gray-600 rounded">
+      <span class="material-icons px-2 text-gray-400" aria-hidden="true">email</span>
+      <label for="login-email" class="sr-only">Email</label>
       <input
-        id="login-username"
-        v-model="username"
-        placeholder="Username"
-        class="w-full p-2 rounded bg-gray-700 border border-gray-600 placeholder-gray-400 text-gray-200"
-        required
-        autocomplete="username"
+          id="login-email"
+          v-model="email"
+          type="email"
+          placeholder="Email"
+          class="flex-1 p-2 bg-transparent placeholder-gray-400 text-gray-200"
+          required
+          autocomplete="login-email"
       />
     </div>
     <div class="flex items-center bg-gray-700 border border-gray-600 rounded">
@@ -23,15 +25,6 @@
         class="flex-1 p-2 bg-transparent placeholder-gray-400 text-gray-200"
         required
         autocomplete="current-password"
-      />
-    </div>
-    <div v-if="totp">
-      <label for="totp" class="sr-only">TOTP</label>
-      <input
-        id="totp"
-        v-model="code"
-        placeholder="TOTP"
-        class="w-full p-2 rounded bg-gray-700 border border-gray-600 placeholder-gray-400 text-gray-200"
       />
     </div>
     <ul v-if="errors.length" class="text-red-400 text-sm">
@@ -51,10 +44,9 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-const username = ref('')
+const email = ref('')
 const password = ref('')
 const code = ref('')
-const totp = ref(false)
 const errors = ref<string[]>([])
 
 const emit = defineEmits<{
@@ -65,7 +57,7 @@ const emit = defineEmits<{
 
 async function submit() {
   errors.value = []
-  if (!username.value) errors.value.push('Username is required')
+  if (!email.value) errors.value.push('Email is required')
   if (!password.value) errors.value.push('Password is required')
   if (errors.value.length) return
 
@@ -73,9 +65,8 @@ async function submit() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      Username: username.value,
+      Email: email.value,
       Password: password.value,
-      TOTP: code.value,
     }),
   })
   if (res.status === 401) {
