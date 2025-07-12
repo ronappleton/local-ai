@@ -12,9 +12,17 @@
         </button>
       </nav>
     </div>
+    <div class="my-2">
+      <input
+        v-model="search"
+        type="text"
+        placeholder="Search models"
+        class="w-full p-1 rounded bg-gray-800 border border-gray-700 text-sm"
+      />
+    </div>
     <div v-if="loading" class="py-2">Loading...</div>
     <ul v-else class="space-y-1 text-sm">
-      <li v-for="m in models" :key="m.modelId" class="truncate">
+      <li v-for="m in filteredModels" :key="m.modelId" class="truncate">
         <ModelCard>{{ m.modelId }}</ModelCard>
       </li>
     </ul>
@@ -23,7 +31,7 @@
 
 <script setup lang="ts">
 // View for listing all models. Formerly `ManageModels.vue`.
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { getAllModels, type Model } from '../../services/models'
 import ModelCard from '../../components/model/ModelCard.vue'
 
@@ -38,6 +46,13 @@ const pipelines = [
 const selected = ref(pipelines[0]);
 const models = ref<Model[]>([])
 const loading = ref(false);
+const search = ref('');
+const filteredModels = computed(() => {
+  if (!search.value) return models.value
+  return models.value.filter(m =>
+    m.modelId.toLowerCase().includes(search.value.toLowerCase())
+  )
+});
 
 async function load() {
   loading.value = true
