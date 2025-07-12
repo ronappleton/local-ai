@@ -13,9 +13,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -41,6 +43,37 @@ type ModelDetail struct {
 // At present it only exposes the total number of models available.
 type GlobalStats struct {
 	TotalModels int `json:"total_models"`
+}
+
+// ModelMetadata exposes extended fields gathered from the model's config files
+// and file list. It embeds ModelDetail so existing data is still available.
+// The additional attributes allow the UI to filter and display richer
+// information about each model.
+type ModelMetadata struct {
+	ModelDetail
+	// LlamaCompatible indicates whether the model can be used with LLaMA
+	// tooling based on the model name or architecture string.
+	LlamaCompatible bool `json:"llamaCompatible"`
+
+	// Raw configuration values pulled from config.json. These are optional
+	// so zero values simply mean the field was missing.
+	ModelType         string `json:"model_type,omitempty"`
+	HiddenSize        int    `json:"hidden_size,omitempty"`
+	NLayer            int    `json:"n_layer,omitempty"`
+	NumAttentionHeads int    `json:"num_attention_heads,omitempty"`
+
+	// Flags derived from the list of available files.
+	Quantized          bool     `json:"quantized"`
+	GGUF               bool     `json:"gguf_available"`
+	Safetensors        bool     `json:"safetensors_available"`
+	CompatibleBackends []string `json:"compatible_backends,omitempty"`
+
+	// License and README information, if present.
+	License   string `json:"license,omitempty"`
+	ModelCard string `json:"model_card,omitempty"`
+
+	// Sum of all downloadable model files in bytes.
+	DownloadSize int64 `json:"download_size,omitempty"`
 }
 
 // LocalModel tracks information about a model that has been downloaded to the
@@ -294,4 +327,122 @@ func ActivateModel(id string) (string, error) {
 		return "", err
 	}
 	return lm.Path, nil
+}
+
+// GetModelMetadata queries Hugging Face for detailed model information and
+// enriches it with config values and file type flags. It returns a populated
+// ModelMetadata structure that callers can persist or display. No download is
+// performed.
+func GetModelMetadata(id string) (*ModelMetadata, error) {
+	url := "https://huggingface.co/api/models/" + id
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return nil, errors.New(string(b))
+	}
+	var data struct {
+		ID           string   `json:"id"`
+		LastModified string   `json:"lastModified"`
+		Downloads    int      `json:"downloads"`
+		Tags         []string `json:"tags"`
+		SHA          string   `json:"sha"`
+		CardData     struct {
+			License string `json:"license"`
+		} `json:"cardData"`
+		Siblings []struct {
+			Rfilename string `json:"rfilename"`
+			Size      int64  `json:"size"`
+		} `json:"siblings"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return nil, err
+	}
+
+	files := make([]string, len(data.Siblings))
+	md := &ModelMetadata{
+		ModelDetail: ModelDetail{
+			ModelInfo: ModelInfo{
+				ID:           data.ID,
+				LastModified: data.LastModified,
+				Downloads:    data.Downloads,
+				Tags:         data.Tags,
+			},
+			SHA: data.SHA,
+		},
+		License: data.CardData.License,
+	}
+
+	var total int64
+	backends := map[string]bool{"transformers": true}
+	for i, s := range data.Siblings {
+		files[i] = s.Rfilename
+		total += s.Size
+		name := strings.ToLower(s.Rfilename)
+		switch {
+		case strings.HasSuffix(name, ".gguf"):
+			md.GGUF = true
+			backends["gguf"] = true
+		case strings.Contains(name, "gptq"):
+			md.Quantized = true
+			backends["gptq"] = true
+		case strings.HasSuffix(name, ".safetensors"):
+			md.Safetensors = true
+		case strings.HasSuffix(name, ".onnx"):
+			backends["onnx"] = true
+		}
+	}
+	md.DownloadSize = total
+	md.Files = files
+
+	// fetch configuration for architecture information
+	cfgURL := "https://huggingface.co/" + id + "/raw/main/config.json"
+	var cfg struct {
+		Architectures     []string `json:"architectures"`
+		ModelType         string   `json:"model_type"`
+		HiddenSize        int      `json:"hidden_size"`
+		NLayer            int      `json:"n_layer"`
+		NumAttentionHeads int      `json:"num_attention_heads"`
+	}
+	if err := fetchJSON(cfgURL, &cfg); err != nil {
+		log.Printf("model %s missing config.json: %v", id, err)
+	} else {
+		md.ModelType = cfg.ModelType
+		md.HiddenSize = cfg.HiddenSize
+		md.NLayer = cfg.NLayer
+		md.NumAttentionHeads = cfg.NumAttentionHeads
+		for _, arch := range cfg.Architectures {
+			if strings.Contains(strings.ToLower(arch), "llama") {
+				md.LlamaCompatible = true
+				break
+			}
+		}
+	}
+
+	if strings.Contains(strings.ToLower(id), "llama") {
+		md.LlamaCompatible = true
+	}
+
+	for b := range backends {
+		md.CompatibleBackends = append(md.CompatibleBackends, b)
+	}
+
+	return md, nil
+}
+
+// fetchJSON is a small helper used by GetModelMetadata to retrieve and decode a
+// JSON document via HTTP.
+func fetchJSON(url string, out interface{}) error {
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("bad status: %s", resp.Status)
+	}
+	return json.NewDecoder(resp.Body).Decode(out)
 }
