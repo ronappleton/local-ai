@@ -53,29 +53,6 @@ func InitDB() (*sql.DB, error) {
 		db.Close()
 		return nil, err
 	}
-	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS users (
-               id INTEGER PRIMARY KEY AUTOINCREMENT,
-               username TEXT UNIQUE,
-               email TEXT UNIQUE,
-               password TEXT,
-               verified INTEGER DEFAULT 0,
-               totp_secret TEXT,
-               admin INTEGER DEFAULT 0
-       );`); err != nil {
-		db.Close()
-		return nil, err
-	}
-	// attempt to add admin column if the table already existed without it
-	db.Exec(`ALTER TABLE users ADD COLUMN admin INTEGER DEFAULT 0`)
-	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS tokens (
-               token TEXT PRIMARY KEY,
-               user_id INTEGER,
-               type TEXT,
-               expires DATETIME
-       );`); err != nil {
-		db.Close()
-		return nil, err
-	}
 	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS model_cache (
                id TEXT PRIMARY KEY,
                pipeline TEXT,

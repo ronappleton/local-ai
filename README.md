@@ -18,9 +18,7 @@ server and stores conversation history in a local SQLite database.
 - **Hugging Face model downloader** with `codex models`
 - **Lightweight web client** under the `client/` directory
 - **Tailwind CSS** is used for styling the web client
-- **User accounts with optional 2FA** for login/logout
 - **Simple admin area** served from the web client
-- **Self-service registration** from the login popup
 
 ## Building
 
@@ -60,8 +58,6 @@ variables `SMTP_ADDR` and `SMTP_FROM`.
 - `codex models download [id]` – download model files
 - `codex models use [id]` – mark a downloaded model as active
 - `codex models status` – show the currently active model
-- `codex user create [username] [email] [password]` – create a user account
-- `codex user promote [username]` – grant admin rights to a user
 
 Run `codex [command] --help` for detailed flags.
 
@@ -77,7 +73,7 @@ number of models available across Hugging Face.
 ## Data location
 
 All conversation history and project metadata are kept in `memory.db` in the
-working directory. User accounts are stored in the same file. Downloaded models
+working directory. Downloaded models
 are stored under `models/` with state tracked in `models/state.json`.
 
 ## Running tests

@@ -13,7 +13,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
-	_ "io"
 	"net/http"
 )
 
