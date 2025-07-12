@@ -72,9 +72,35 @@ var listUsersCmd = &cobra.Command{
 	},
 }
 
+// deleteAll indicates whether all users should be removed.
+var deleteAll bool
+
+// deleteUserCmd removes a specific user account or all if --all is set.
+var deleteUserCmd = &cobra.Command{
+	Use:   "delete [username]",
+	Short: "Delete user accounts",
+	Args:  cobra.MaximumNArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		db, err := memory.InitDB()
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+		if deleteAll {
+			return auth.DeleteAllUsers(db)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("username required")
+		}
+		return auth.DeleteUser(db, args[0])
+	},
+}
+
 func init() {
 	usersCmd.AddCommand(createUserCmd)
 	usersCmd.AddCommand(promoteUserCmd)
 	usersCmd.AddCommand(listUsersCmd)
+	deleteUserCmd.Flags().BoolVarP(&deleteAll, "all", "a", false, "delete all users")
+	usersCmd.AddCommand(deleteUserCmd)
 	rootCmd.AddCommand(usersCmd)
 }
