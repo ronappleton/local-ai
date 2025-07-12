@@ -1,6 +1,6 @@
 // Centralized API calls for model management.
 // Moved from api.ts and expanded with clear method names.
-import type { Model } from "../types/models";
+import type { Model, ModelDetail, GlobalStats } from "../types/models";
 
 const BASE = "/api/models";
 
@@ -17,13 +17,13 @@ export async function getActiveModels(): Promise<Model[]> {
   return res.json();
 }
 
-export async function getModelById(id: string): Promise<Model> {
+export async function getModelById(id: string): Promise<ModelDetail> {
   const res = await fetch(`${BASE}/${encodeURIComponent(id)}`);
   if (!res.ok) throw new Error("Failed to fetch model");
   return res.json();
 }
 
-export async function getModelStats(id: string): Promise<any> {
+export async function getModelStats(id: string): Promise<ModelDetail> {
   const res = await fetch(`${BASE}/${encodeURIComponent(id)}/stats`);
   if (!res.ok) throw new Error("Failed to fetch model stats");
   return res.json();
@@ -43,7 +43,7 @@ export async function deactivateModel(id: string): Promise<void> {
   if (!res.ok) throw new Error("Failed to deactivate model");
 }
 
-export async function getGlobalStats(): Promise<any> {
+export async function getGlobalStats(): Promise<GlobalStats> {
   const res = await fetch(`${BASE}/stats/global`);
   if (!res.ok) throw new Error("Failed to fetch global stats");
   return res.json();

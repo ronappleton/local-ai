@@ -37,7 +37,12 @@
           class="border-b border-gray-800"
         >
           <td class="py-1">
-            <ModelCard>{{ m.modelId }}</ModelCard>
+            <RouterLink
+              :to="`/admin/models/${m.modelId}`"
+              class="text-blue-400 hover:underline"
+            >
+              <ModelCard>{{ m.modelId }}</ModelCard>
+            </RouterLink>
           </td>
           <td class="py-1">{{ m.lastModified }}</td>
           <td class="py-1">{{ m.downloads }}</td>
@@ -67,6 +72,7 @@
 <script setup lang="ts">
 // View for listing all models. Formerly `ManageModels.vue`.
 import { ref, computed } from "vue";
+import { RouterLink } from "vue-router";
 import {
   getAllModels,
   enableModel,

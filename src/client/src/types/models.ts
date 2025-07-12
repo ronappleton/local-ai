@@ -5,12 +5,16 @@ export interface Model {
   tags: string[];
 }
 
+export interface ModelDetail extends Model {
+  sha: string;
+  files: string[];
+}
+
 export interface ModelStats {
   // placeholder for per-model stats
   [key: string]: unknown;
 }
 
 export interface GlobalStats {
-  // placeholder for global stats
-  [key: string]: unknown;
+  total_models: number;
 }

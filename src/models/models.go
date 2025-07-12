@@ -11,6 +11,7 @@ package models
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -25,6 +26,21 @@ type ModelInfo struct {
 	LastModified string   `json:"lastModified"`
 	Downloads    int      `json:"downloads"`
 	Tags         []string `json:"tags"`
+}
+
+// ModelDetail provides extended information for a single model returned by
+// the Hugging Face API. It embeds ModelInfo and includes the current SHA hash
+// along with the list of files available for download.
+type ModelDetail struct {
+	ModelInfo
+	SHA   string   `json:"sha"`
+	Files []string `json:"files"`
+}
+
+// GlobalStats summarises overall model information returned from Hugging Face.
+// At present it only exposes the total number of models available.
+type GlobalStats struct {
+	TotalModels int `json:"total_models"`
 }
 
 // LocalModel tracks information about a model that has been downloaded to the
@@ -114,6 +130,75 @@ func ListModelsByType(pipeline string) ([]ModelInfo, error) {
 		res[i] = ModelInfo{ID: m.ID, LastModified: m.LastModified, Downloads: m.Downloads, Tags: m.Tags}
 	}
 	return res, nil
+}
+
+// GetModelDetail retrieves metadata for a specific model using the Hugging
+// Face API. The returned structure includes the SHA identifier and file list
+// in addition to the summary information provided by ListModelsByType.
+func GetModelDetail(id string) (*ModelDetail, error) {
+	url := "https://huggingface.co/api/models/" + id
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return nil, errors.New(string(b))
+	}
+	var data struct {
+		ID           string   `json:"id"`
+		LastModified string   `json:"lastModified"`
+		Downloads    int      `json:"downloads"`
+		Tags         []string `json:"tags"`
+		SHA          string   `json:"sha"`
+		Siblings     []struct {
+			Rfilename string `json:"rfilename"`
+		} `json:"siblings"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
+		return nil, err
+	}
+	files := make([]string, len(data.Siblings))
+	for i, s := range data.Siblings {
+		files[i] = s.Rfilename
+	}
+	return &ModelDetail{
+		ModelInfo: ModelInfo{
+			ID:           data.ID,
+			LastModified: data.LastModified,
+			Downloads:    data.Downloads,
+			Tags:         data.Tags,
+		},
+		SHA:   data.SHA,
+		Files: files,
+	}, nil
+}
+
+// GetGlobalStats queries Hugging Face for overall statistics about available
+// models. It relies on the X-Total-Count header which is returned when
+// requesting models with limit=1.
+func GetGlobalStats() (*GlobalStats, error) {
+	req, err := http.NewRequest(http.MethodGet, "https://huggingface.co/api/models?limit=1", nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		b, _ := io.ReadAll(resp.Body)
+		return nil, errors.New(string(b))
+	}
+	totalStr := resp.Header.Get("X-Total-Count")
+	if totalStr == "" {
+		return nil, errors.New("total count header missing")
+	}
+	var total int
+	fmt.Sscanf(totalStr, "%d", &total)
+	return &GlobalStats{TotalModels: total}, nil
 }
 
 // DownloadModel fetches all files for the given model ID and stores them under
