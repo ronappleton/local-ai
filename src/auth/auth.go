@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
+	"log"
 	"time"
 
 	"codex/src/email"
 
-	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -59,12 +59,12 @@ func CreateUser(db *sql.DB, username, email, password string) error {
 
 // GetByUsername fetches a user record by username.
 func GetByUsername(db *sql.DB, username string) (*User, error) {
-	row := db.QueryRow(`SELECT id, username, email, password, verified, totp_secret, admin FROM users WHERE username = ?`, username)
+	row := db.QueryRow(`SELECT id, username, email, password, verified, admin FROM users WHERE username = ?`, username)
 	var u User
 	var verified int
 	var secret sql.NullString
 	var admin int
-	err := row.Scan(&u.ID, &u.Username, &u.Email, &u.Password, &verified, &secret, &admin)
+	err := row.Scan(&u.ID, &u.Username, &u.Email, &u.Password, &verified, &admin)
 	if err != nil {
 		return nil, err
 	}
@@ -78,12 +78,12 @@ func GetByUsername(db *sql.DB, username string) (*User, error) {
 
 // GetByEmail fetches a user record by email address.
 func GetByEmail(db *sql.DB, email string) (*User, error) {
-	row := db.QueryRow(`SELECT id, username, email, password, verified, totp_secret, admin FROM users WHERE email = ?`, email)
+	row := db.QueryRow(`SELECT id, username, email, password, verified, admin FROM users WHERE email = ?`, email)
 	var u User
 	var verified int
 	var secret sql.NullString
 	var admin int
-	err := row.Scan(&u.ID, &u.Username, &u.Email, &u.Password, &verified, &secret, &admin)
+	err := row.Scan(&u.ID, &u.Username, &u.Email, &u.Password, &verified, &admin)
 	if err != nil {
 		return nil, err
 	}
@@ -97,17 +97,13 @@ func GetByEmail(db *sql.DB, email string) (*User, error) {
 
 // GetByID fetches a user record by numeric ID.
 func GetByID(db *sql.DB, id int) (*User, error) {
-	row := db.QueryRow(`SELECT id, username, email, password, verified, totp_secret, admin FROM users WHERE id = ?`, id)
+	row := db.QueryRow(`SELECT id, username, email, password, verified, admin FROM users WHERE id = ?`, id)
 	var u User
 	var verified int
-	var secret sql.NullString
 	var admin int
-	err := row.Scan(&u.ID, &u.Username, &u.Email, &u.Password, &verified, &secret, &admin)
+	err := row.Scan(&u.ID, &u.Username, &u.Email, &u.Password, &verified, &admin)
 	if err != nil {
 		return nil, err
-	}
-	if secret.Valid {
-		u.TOTPSecret = secret.String
 	}
 	u.Verified = verified != 0
 	u.Admin = admin != 0
@@ -162,30 +158,6 @@ func SetAdmin(db *sql.DB, username string, admin bool) error {
 	return err
 }
 
-// EnableTOTP generates a secret and stores it. The secret is returned to the caller.
-func EnableTOTP(db *sql.DB, id int) (string, error) {
-	key, err := totp.Generate(totp.GenerateOpts{
-		Issuer:      "Codex",
-		AccountName: "user",
-	})
-	if err != nil {
-		return "", err
-	}
-	_, err = db.Exec(`UPDATE users SET totp_secret=? WHERE id=?`, key.Secret(), id)
-	if err != nil {
-		return "", err
-	}
-	return key.Secret(), nil
-}
-
-// VerifyTOTP checks a TOTP code against the stored secret.
-func VerifyTOTP(secret, code string) bool {
-	if secret == "" {
-		return true
-	}
-	return totp.Validate(code, secret)
-}
-
 // List returns all users for the admin API.
 func List(db *sql.DB) ([]User, error) {
 	rows, err := db.Query(`SELECT id, username, email, verified, admin FROM users ORDER BY id`)
@@ -223,6 +195,8 @@ func Authenticate(db *sql.DB, email, password string) (*User, error) {
 	if err := VerifyPassword(u, password); err != nil {
 		return nil, err
 	}
+
+	log.Printf("Authenticated user %s", u.Username)
 	return u, nil
 }
 
