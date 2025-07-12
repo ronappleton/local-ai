@@ -82,29 +82,29 @@ func ModelActionHandler(w http.ResponseWriter, r *http.Request) {
 			log.Printf("ModelActionHandler InitDB error: %v", err)
 		}
 
-		var detail *models.ModelDetail
+		var md *models.ModelMetadata
 		if db != nil && !refresh {
-			detail, err = memory.GetModelDetail(db, id)
+			md, err = memory.GetModelMetadata(db, id)
 			if err != nil {
-				log.Printf("ModelActionHandler GetModelDetail error: %v", err)
+				log.Printf("ModelActionHandler GetModelMetadata error: %v", err)
 			}
 		}
-		if detail == nil || refresh {
-			detail, err = models.GetModelDetail(id)
+		if md == nil || refresh {
+			md, err = models.GetModelMetadata(id)
 			if err != nil {
-				log.Printf("ModelActionHandler GetModelDetail remote error: %v", err)
+				log.Printf("ModelActionHandler GetModelMetadata remote error: %v", err)
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
 			}
 			if db != nil {
-				if err := memory.SaveModelDetail(db, "", detail); err != nil {
-					log.Printf("ModelActionHandler SaveModelDetail error: %v", err)
+				if err := memory.SaveModelMetadata(db, "", md); err != nil {
+					log.Printf("ModelActionHandler SaveModelMetadata error: %v", err)
 				}
 			}
 		}
 		w.Header().Set("Content-Type", "application/json")
-		log.Printf("ModelActionHandler detail %+v", detail)
-		if err := json.NewEncoder(w).Encode(detail); err != nil {
+		log.Printf("ModelActionHandler detail %+v", md)
+		if err := json.NewEncoder(w).Encode(md); err != nil {
 			log.Printf("ModelActionHandler encode error: %v", err)
 		}
 		return
