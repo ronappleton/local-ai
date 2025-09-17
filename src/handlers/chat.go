@@ -10,11 +10,14 @@ package handlers
 
 import (
 	"codex/src/llama"
+	"codex/src/memory"
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 )
 
 // ChatRequest is the JSON payload accepted by the chat endpoint. It simply
@@ -24,6 +27,13 @@ import (
 type ChatRequest struct {
 	// Prompt is the user's message that will be sent to the LLM.
 	Prompt string `json:"prompt"`
+	// Project optionally specifies which conversation bucket to store the
+	// exchange against. If omitted the currently active project (or a
+	// default) will be used.
+	Project string `json:"project,omitempty"`
+	// Role allows callers to submit messages as a specific speaker. When
+	// blank it defaults to the "user" role.
+	Role string `json:"role,omitempty"`
 }
 
 // ChatResponse represents the JSON body returned by the chat endpoint. The
@@ -64,6 +74,8 @@ func ensureAnonCookie(w http.ResponseWriter, r *http.Request) string {
 // functionality over HTTP. AI Awareness: this is the bridge between external
 // clients and the underlying LLM. Additional preprocessing or postprocessing
 // logic can be inserted here.
+var llamaSendPrompt = llama.SendPrompt
+
 func ChatHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("%s %s", r.Method, r.URL.Path)
 	if r.Method != http.MethodPost {
@@ -81,14 +93,47 @@ func ChatHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request", http.StatusBadRequest)
 		return
 	}
-	log.Printf("ChatHandler prompt=%q", req.Prompt)
+	req.Prompt = strings.TrimSpace(req.Prompt)
+	if req.Prompt == "" {
+		http.Error(w, "Prompt required", http.StatusBadRequest)
+		log.Printf("ChatHandler empty prompt")
+		return
+	}
+	log.Printf("ChatHandler prompt=%q project=%q role=%q", req.Prompt, req.Project, req.Role)
+
+	db, err := memory.InitDB()
+	if err != nil {
+		log.Printf("ChatHandler InitDB error: %v", err)
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	project, role := resolveChatContext(db, strings.TrimSpace(req.Project), strings.TrimSpace(req.Role))
+	if err := memory.AddProject(db, project); err != nil {
+		log.Printf("ChatHandler AddProject error: %v", err)
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
+
+	if err := memory.AddEntry(db, project, role, req.Prompt); err != nil {
+		log.Printf("ChatHandler AddEntry user error: %v", err)
+		http.Error(w, "Database error", http.StatusInternalServerError)
+		return
+	}
 
 	// Forward the prompt to the LLM backend. The llama package abstracts
 	// the HTTP communication.
-	result, err := llama.SendPrompt(req.Prompt)
+	result, err := llamaSendPrompt(req.Prompt)
 	if err != nil {
 		log.Printf("ChatHandler llama error: %v", err)
 		http.Error(w, "LLM error: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := memory.AddEntry(db, project, "assistant", result); err != nil {
+		log.Printf("ChatHandler AddEntry assistant error: %v", err)
+		http.Error(w, "Database error", http.StatusInternalServerError)
 		return
 	}
 
@@ -100,4 +145,18 @@ func ChatHandler(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(res); err != nil {
 		log.Printf("ChatHandler encode error: %v", err)
 	}
+}
+
+func resolveChatContext(db *sql.DB, project, role string) (string, string) {
+	if role == "" {
+		role = "user"
+	}
+	if project != "" {
+		return project, role
+	}
+	active, err := memory.GetActiveProject(db)
+	if err == nil && active != "" {
+		return active, role
+	}
+	return "default", role
 }
